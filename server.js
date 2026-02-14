@@ -76,7 +76,8 @@ const CAT_SUBS = {
     'machinelearning','artificial','cybersecurity','netsec','hacking',
     'devops','gamedev','compsci','datascience','ChatGPT','openai','singularity'],
   politics: ['politics','worldnews','news','conservative','liberal','democrats',
-    'republicans','geopolitics','uspolitics','ukpolitics','europe','law'],
+    'republicans','geopolitics','uspolitics','ukpolitics','europe','law',
+    'CredibleDefense'],
   science: ['science','space','physics','biology','chemistry','astronomy',
     'environment','climate','nature','earthscience','futurology'],
   business: ['business','economics','finance','stocks','investing',
@@ -88,7 +89,10 @@ const CAT_SUBS = {
   sports: ['sports','nba','nfl','soccer','football','baseball','hockey',
     'mma','formula1','tennis','olympics','running','golf'],
   world: ['worldnews','internationalnews','middleeast','asia','africa',
-    'india','china','japan','korea','ukraine','europe']
+    'india','china','japan','korea','ukraine','europe'],
+  community: ['askreddit','todayilearned','explainlikeimfive','amitheasshole',
+    'showerthoughts','unpopularopinion','changemyview','nostupidquestions',
+    'tooafraidtoask','tifu','confessions','relationship_advice','trueoffmychest']
 };
 
 const CAT_KEYWORDS = {
@@ -98,7 +102,8 @@ const CAT_KEYWORDS = {
   business: /\b(market|stock|econom|financ|bank|crypto|bitcoin|invest|billion|million|ceo|company|revenue|profit|trade|tariff)\b/i,
   entertainment: /\b(movie|film|music|game|tv show|actor|actress|album|song|stream|netflix|disney|concert|award|grammy|oscar)\b/i,
   sports: /\b(team|player|game|score|champion|league|cup|match|season|coach|nba|nfl|fifa|goal|win |lost )\b/i,
-  world: /\b(war|conflict|bomb|missile|military|troops|refugee|humanitarian|sanction|treaty|border|crisis)\b/i
+  world: /\b(war|conflict|bomb|missile|military|troops|refugee|humanitarian|sanction|treaty|border|crisis)\b/i,
+  community: /\b(AITA|YTA|NTA|ELI5|TIL |ask reddit|what is|how do|why do|what would|does anyone|am i the|today i learned|explain like)\b/i
 };
 
 function guessCategory(subreddit, title) {
@@ -154,7 +159,8 @@ const COUNTRY_SUBS = {
   es: ['spain','es'],
   nl: ['thenetherlands'],
   se: ['sweden'],
-  pl: ['Polska','poland']
+  pl: ['Polska','poland'],
+  ph: ['Philippines','phinvest','CasualPH','PHClassifieds']
 };
 
 /* ═══════════════════════════════════════════════════
@@ -523,9 +529,9 @@ app.get('/api/feed', async (req, res) => {
     // Reddit — accept custom list from frontend, or use defaults
     // Fetched sequentially with delays to dodge rate-limits
     const DEFAULT_REDDIT_SUBS = ['popular','worldnews','technology','science','news','business',
-      'artificial','MachineLearning','ChatGPT','todayilearned','interestingasfuck',
+      'artificial','MachineLearning','ChatGPT','interestingasfuck',
       'UpliftingNews','nottheonion','geopolitics','economics','Futurology',
-      'space','movies','gaming','programming'];
+      'space','movies','gaming','programming','CredibleDefense'];
     const requestedSubs = subs
       ? subs.split(',').map(s => s.trim()).filter(Boolean).slice(0, 25)
       : DEFAULT_REDDIT_SUBS;

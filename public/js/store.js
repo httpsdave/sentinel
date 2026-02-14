@@ -34,9 +34,6 @@ const Store = (() => {
     // ── Trending / General ──
     { name: 'popular',                cat: 'trending',      on: true,  desc: 'Reddit front page' },
     { name: 'all',                    cat: 'trending',      on: false, desc: 'Everything on Reddit' },
-    { name: 'AskReddit',             cat: 'trending',      on: false, desc: 'Trending questions' },
-    { name: 'todayilearned',         cat: 'trending',      on: true,  desc: 'Interesting facts' },
-    { name: 'explainlikeimfive',     cat: 'trending',      on: false, desc: 'Simple explanations' },
     { name: 'interestingasfuck',     cat: 'trending',      on: true,  desc: 'Fascinating content' },
     { name: 'Damnthatsinteresting',  cat: 'trending',      on: false, desc: 'Amazing discoveries' },
     { name: 'OutOfTheLoop',          cat: 'trending',      on: false, desc: 'What you missed' },
@@ -50,6 +47,7 @@ const Store = (() => {
     { name: 'TrueReddit',           cat: 'news',          on: false, desc: 'Long-form journalism' },
     { name: 'inthenews',            cat: 'news',          on: false, desc: 'News discussion' },
     { name: 'anime_titties',        cat: 'news',          on: false, desc: 'World politics (real)' },
+    { name: 'CredibleDefense',      cat: 'news',          on: false, desc: 'Military & conflict analysis' },
     { name: 'qualitynews',          cat: 'news',          on: false, desc: 'Curated journalism' },
 
     // ── Technology ──
@@ -133,10 +131,24 @@ const Store = (() => {
     { name: 'tennis',               cat: 'sports',        on: false, desc: 'Tennis' },
     { name: 'baseball',             cat: 'sports',        on: false, desc: 'Baseball' },
 
+    // ── Community / Discussion ──
+    { name: 'AskReddit',             cat: 'community',     on: false, desc: 'Trending questions & discussions' },
+    { name: 'todayilearned',         cat: 'community',     on: false, desc: 'Interesting random facts' },
+    { name: 'explainlikeimfive',     cat: 'community',     on: false, desc: 'Simple explanations' },
+    { name: 'AmItheAsshole',         cat: 'community',     on: false, desc: 'Moral judgement stories' },
+    { name: 'Showerthoughts',        cat: 'community',     on: false, desc: 'Random insights' },
+    { name: 'unpopularopinion',      cat: 'community',     on: false, desc: 'Hot takes & debates' },
+    { name: 'changemyview',          cat: 'community',     on: false, desc: 'Challenge your views' },
+    { name: 'NoStupidQuestions',     cat: 'community',     on: false, desc: 'Ask anything' },
+    { name: 'TooAfraidToAsk',        cat: 'community',     on: false, desc: 'Taboo & awkward questions' },
+    { name: 'tifu',                  cat: 'community',     on: false, desc: 'Today I messed up' },
+    { name: 'confessions',           cat: 'community',     on: false, desc: 'Anonymous confessions' },
+    { name: 'relationship_advice',   cat: 'community',     on: false, desc: 'Relationship advice' },
+    { name: 'TrueOffMyChest',        cat: 'community',     on: false, desc: 'Vent & share stories' },
+
     // ── Lifestyle / Misc ──
     { name: 'LifeProTips',          cat: 'misc',          on: false, desc: 'Life hacks' },
     { name: 'mildlyinteresting',    cat: 'misc',          on: false, desc: 'Mildly interesting' },
-    { name: 'Showerthoughts',       cat: 'misc',          on: false, desc: 'Random insights' },
     { name: 'YouShouldKnow',       cat: 'misc',          on: false, desc: 'Useful knowledge' },
     { name: 'coolguides',           cat: 'misc',          on: false, desc: 'Infographics' },
     { name: 'dataisbeautiful',      cat: 'misc',          on: false, desc: 'Data visualisation' }
@@ -152,6 +164,7 @@ const Store = (() => {
     { id: 'finance',        label: '📈 BUSINESS / FINANCE' },
     { id: 'entertainment',  label: '🎬 ENTERTAINMENT' },
     { id: 'sports',         label: '⚽ SPORTS' },
+    { id: 'community',      label: '💬 COMMUNITY' },
     { id: 'misc',           label: '💡 MISC' }
   ];
 

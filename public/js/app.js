@@ -104,6 +104,7 @@ const App = (() => {
     // ── Country / Local News selector ──
     document.getElementById('setting-country')?.addEventListener('change', e => {
       Store.saveSetting('country', e.target.value);
+      updateRegionStatus();
       loadFeed();   // reload with new country context
     });
 
@@ -198,6 +199,7 @@ const App = (() => {
     await loadFeed();
     scheduleRefresh();
     updateSourceStatus();
+    updateRegionStatus();
 
     // Init auth (must come after Store is loaded)
     await Auth.init();
@@ -243,7 +245,11 @@ const App = (() => {
     pool = pool.filter(i => activeSources.has(i.source));
 
     // Category filter
-    if (currentCategory !== 'all') {
+    // Community is a separate category — excluded from 'all' view,
+    // only shown when explicitly selected
+    if (currentCategory === 'all') {
+      pool = pool.filter(i => i.category !== 'community');
+    } else {
       pool = pool.filter(i => i.category === currentCategory);
     }
 
@@ -686,6 +692,19 @@ const App = (() => {
       const n = Object.values(s.sources).filter(Boolean).length;
       document.getElementById('status-sources').textContent = 'Sources: ' + n;
     } catch {}
+  }
+
+  function updateRegionStatus() {
+    const country = Store.getSettings().country || 'auto';
+    const regionMap = {
+      auto: '🌍 AUTO', us: '🇺🇸 US', gb: '🇬🇧 GB', ca: '🇨🇦 CA', au: '🇦🇺 AU',
+      de: '🇩🇪 DE', fr: '🇫🇷 FR', in: '🇮🇳 IN', jp: '🇯🇵 JP', br: '🇧🇷 BR',
+      za: '🇿🇦 ZA', ng: '🇳🇬 NG', ae: '🇦🇪 AE', sg: '🇸🇬 SG', kr: '🇰🇷 KR',
+      mx: '🇲🇽 MX', it: '🇮🇹 IT', es: '🇪🇸 ES', nl: '🇳🇱 NL', se: '🇸🇪 SE',
+      pl: '🇵🇱 PL', ph: '🇵🇭 PH'
+    };
+    const el = document.getElementById('status-region');
+    if (el) el.textContent = 'Region: ' + (regionMap[country] || country.toUpperCase());
   }
 
   function scheduleRefresh() {
