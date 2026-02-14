@@ -1,11 +1,15 @@
 /* ═══════════════════════════════════════════════════
-   AUTH — Supabase authentication + cloud sync
+   AUTH — Proxied through backend (no direct Supabase
+   calls from browser — avoids CORS issues)
    Falls back gracefully to guest mode if not configured
    ═══════════════════════════════════════════════════ */
 const Auth = (() => {
-  let supabase = null;
+  let configured = false;
   let currentUser = null;
+  let accessToken = null;
   let _syncing = false;
+
+  const TOKEN_KEY = 'sentinel_auth_token';
 
   /* ═══ INIT ═══════════════════════════════════════ */
   async function init() {
@@ -19,23 +23,31 @@ const Auth = (() => {
         return;
       }
 
-      supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      configured = true;
 
-      // Check existing session
-      const { data: { session } } = await supabase.auth.getSession();
-      currentUser = session?.user || null;
+      // Restore saved token
+      try { accessToken = localStorage.getItem(TOKEN_KEY) || null; } catch {}
+
+      if (accessToken) {
+        // Verify token is still valid
+        try {
+          const r = await fetch('/api/auth/user', {
+            headers: { 'Authorization': 'Bearer ' + accessToken }
+          });
+          const data = await r.json();
+          currentUser = data.user || null;
+          if (!currentUser) {
+            accessToken = null;
+            try { localStorage.removeItem(TOKEN_KEY); } catch {}
+          }
+        } catch {
+          currentUser = null;
+          accessToken = null;
+        }
+      }
+
       _updateHeaderUI(currentUser);
       if (currentUser) await pullFromCloud();
-
-      // Listen for auth state changes
-      supabase.auth.onAuthStateChange(async (event, session) => {
-        const prev = currentUser;
-        currentUser = session?.user || null;
-        _updateHeaderUI(currentUser);
-        if (event === 'SIGNED_IN' && !prev) {
-          await pullFromCloud();
-        }
-      });
 
       // Register store sync — debounced saves to cloud on any local change
       Store.onSync(() => {
@@ -50,58 +62,62 @@ const Auth = (() => {
 
   /* ═══ AUTH ACTIONS ═══════════════════════════════ */
   async function signUp(email, password) {
-    if (!supabase) throw new Error('Auth not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw error;
+    if (!configured) throw new Error('Auth not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Sign up failed');
     return data;
   }
 
   async function signIn(email, password) {
-    if (!supabase) throw new Error('Auth not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (!configured) throw new Error('Auth not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Sign in failed');
+
+    // Supabase token response
+    accessToken = data.access_token || null;
+    currentUser = data.user || null;
+    if (accessToken) {
+      try { localStorage.setItem(TOKEN_KEY, accessToken); } catch {}
+    }
+    _updateHeaderUI(currentUser);
+    if (currentUser) await pullFromCloud();
     return data;
   }
 
   async function signOut() {
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    accessToken = null;
     currentUser = null;
+    try { localStorage.removeItem(TOKEN_KEY); } catch {}
     _updateHeaderUI(null);
+    // Notify server (fire-and-forget)
+    fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
   }
 
   /* ═══ CLOUD SYNC ═════════════════════════════════ */
   async function pushToCloud() {
-    if (!supabase || !currentUser) return;
+    if (!configured || !currentUser || !accessToken) return;
     _syncing = true;
     try {
       const data = Store.exportAll();
-
-      // Upsert preferences
-      await supabase.from('user_prefs').upsert({
-        user_id: currentUser.id,
-        subreddits: data.subreddits,
-        custom_subs: data.customSubs,
-        interests: data.interests,
-        settings: data.settings,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-
-      // Replace bookmarks — delete then insert
-      await supabase.from('user_bookmarks')
-        .delete()
-        .eq('user_id', currentUser.id);
-
-      if (data.bookmarks.length) {
-        await supabase.from('user_bookmarks').insert(
-          data.bookmarks.map(b => ({
-            user_id: currentUser.id,
-            item_id: b.id,
-            item_data: b
-          }))
-        );
-      }
-
+      const res = await fetch('/api/sync/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Push failed');
       _setSyncStatus('synced');
     } catch (e) {
       console.error('[AUTH] Push failed:', e.message);
@@ -111,22 +127,21 @@ const Auth = (() => {
   }
 
   async function pullFromCloud() {
-    if (!supabase || !currentUser) return;
+    if (!configured || !currentUser || !accessToken) return;
     _syncing = true;
     try {
-      // Load preferences
-      const { data: prefs } = await supabase
-        .from('user_prefs')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
+      const res = await fetch('/api/sync/pull', {
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      });
+      if (!res.ok) throw new Error('Pull failed');
+      const data = await res.json();
 
-      if (prefs) {
+      if (data.prefs) {
         Store.importAll({
-          subreddits: prefs.subreddits || [],
-          customSubs: prefs.custom_subs || [],
-          interests: prefs.interests || {},
-          settings: prefs.settings || {}
+          subreddits: data.prefs.subreddits || [],
+          customSubs: data.prefs.custom_subs || [],
+          interests: data.prefs.interests || {},
+          settings: data.prefs.settings || {}
         });
       } else {
         // First login — push current local state to cloud
@@ -135,15 +150,8 @@ const Auth = (() => {
         _syncing = true;
       }
 
-      // Load bookmarks
-      const { data: bookmarks } = await supabase
-        .from('user_bookmarks')
-        .select('item_data')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-
-      if (bookmarks && bookmarks.length) {
-        Store.importAll({ bookmarks: bookmarks.map(b => b.item_data) });
+      if (data.bookmarks && data.bookmarks.length) {
+        Store.importAll({ bookmarks: data.bookmarks });
       }
 
       _setSyncStatus('synced');

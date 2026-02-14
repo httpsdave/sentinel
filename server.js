@@ -398,6 +398,83 @@ async function _fetchWikinews() {
 }
 
 /* ═══════════════════════════════════════════════════
+   THE NEWS API — Headlines with category grouping
+   https://www.thenewsapi.com
+   ═══════════════════════════════════════════════════ */
+async function _fetchTheNewsAPI(locale = '', language = 'en', perCat = 5) {
+  const key = process.env.THENEWSAPI_KEY;
+  if (!key) return [];
+
+  const ck = `thenewsapi:${locale || 'global'}:${language}:${perCat}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    let url = `https://api.thenewsapi.com/v1/news/headlines?language=${language}&headlines_per_category=${perCat}&include_similar=true&api_token=${key}`;
+    if (locale) url += `&locale=${locale}`;
+
+    const json = await httpGet(url);
+    if (!json || !json.data) return [];
+
+    const catMap = {
+      general: 'general', business: 'business', sports: 'sports',
+      tech: 'technology', science: 'science', health: 'science',
+      entertainment: 'entertainment', politics: 'politics'
+    };
+
+    const posts = [];
+    for (const [section, articles] of Object.entries(json.data)) {
+      if (!Array.isArray(articles)) continue;
+      for (const a of articles) {
+        posts.push({
+          id: 'tna_' + a.uuid,
+          title: a.title || '',
+          url: a.url || '',
+          permalink: a.url || '',
+          source: 'thenewsapi',
+          sourceDetail: a.source || 'TheNewsAPI',
+          score: 0,
+          comments: 0,
+          thumbnail: a.image_url || null,
+          created: a.published_at ? new Date(a.published_at).getTime() : Date.now(),
+          author: '',
+          snippet: (a.description || a.snippet || '').substring(0, 250),
+          domain: a.source || '',
+          category: catMap[section] || guessCategory('', a.title)
+        });
+        // Include similar articles for broader coverage
+        if (Array.isArray(a.similar)) {
+          for (const s of a.similar) {
+            posts.push({
+              id: 'tna_' + s.uuid,
+              title: s.title || '',
+              url: s.url || '',
+              permalink: s.url || '',
+              source: 'thenewsapi',
+              sourceDetail: s.source || 'TheNewsAPI',
+              score: 0,
+              comments: 0,
+              thumbnail: s.image_url || null,
+              created: s.published_at ? new Date(s.published_at).getTime() : Date.now(),
+              author: '',
+              snippet: (s.description || s.snippet || '').substring(0, 250),
+              domain: s.source || '',
+              category: catMap[section] || guessCategory('', s.title)
+            });
+          }
+        }
+      }
+    }
+
+    setCache(ck, posts);
+    return posts;
+  } catch (err) {
+    console.error('[THENEWSAPI]', err.message);
+    return [];
+  }
+}
+
+/* ═══════════════════════════════════════════════════
    ROUTE HANDLERS
    ═══════════════════════════════════════════════════ */
 app.get('/api/reddit', async (req, res) => {
@@ -518,12 +595,14 @@ app.get('/api/feed', async (req, res) => {
     const { category, search, subs, country } = req.query;
 
     // Non-Reddit sources in parallel
-    const [hn, rss, news, guardian, wikinews] = await Promise.all([
+    const theNewsLocale = (country && country !== 'auto') ? country : '';
+    const [hn, rss, news, guardian, wikinews, thenewsapi] = await Promise.all([
       _fetchHN('top', 30).catch(e => { console.error('[FEED/HN]', e.message); return []; }),
       _fetchRSS().catch(e => { console.error('[FEED/RSS]', e.message); return []; }),
       _fetchNews('', category || 'general').catch(e => { console.error('[FEED/NEWS]', e.message); return []; }),
       _fetchGuardian('', 25).catch(e => { console.error('[FEED/GUARDIAN]', e.message); return []; }),
       _fetchWikinews().catch(e => { console.error('[FEED/WIKINEWS]', e.message); return []; }),
+      _fetchTheNewsAPI(theNewsLocale, 'en', 5).catch(e => { console.error('[FEED/THENEWSAPI]', e.message); return []; }),
     ]);
 
     // Reddit — accept custom list from frontend, or use defaults
@@ -567,8 +646,8 @@ app.get('/api/feed', async (req, res) => {
       }
     }
 
-    let items = [...hn, ...rss, ...news, ...guardian, ...wikinews, ...redditPosts, ...localPosts];
-    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
+    let items = [...hn, ...rss, ...news, ...guardian, ...wikinews, ...thenewsapi, ...redditPosts, ...localPosts];
+    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} TheNewsAPI=${thenewsapi.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
 
     // De-duplicate
     const seen = new Set();
@@ -618,6 +697,233 @@ app.get('/api/config', (_req, res) => {
 });
 
 /* ═══════════════════════════════════════════════════
+   SUPABASE PROXY — all Supabase calls go through
+   the server to avoid browser CORS issues
+   ═══════════════════════════════════════════════════ */
+const SUPA_URL = process.env.SUPABASE_URL || '';
+const SUPA_KEY = process.env.SUPABASE_ANON_KEY || '';
+
+function _supaHeaders(authToken) {
+  const h = {
+    'apikey': SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal'
+  };
+  if (authToken) h['Authorization'] = 'Bearer ' + authToken;
+  return h;
+}
+
+function _supaPost(path, body, token) {
+  return new Promise((resolve, reject) => {
+    const url = SUPA_URL + path;
+    const data = JSON.stringify(body);
+    const u = new URL(url);
+    const opts = {
+      hostname: u.hostname,
+      port: u.port || 443,
+      path: u.pathname + u.search,
+      method: 'POST',
+      headers: { ..._supaHeaders(token), 'Content-Length': Buffer.byteLength(data) }
+    };
+    const req = https.request(opts, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        if (res.statusCode >= 400) return reject(new Error(`Supabase ${res.statusCode}: ${body}`));
+        try { resolve(body ? JSON.parse(body) : {}); } catch { resolve({}); }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+/* ── Auth: Sign Up ── */
+app.post('/api/auth/signup', async (req, res) => {
+  if (!SUPA_URL || !SUPA_KEY) return res.status(503).json({ error: 'Auth not configured' });
+  try {
+    const { email, password } = req.body;
+    const result = await _supaPost('/auth/v1/signup', { email, password });
+    res.json(result);
+  } catch (e) {
+    console.error('[AUTH/SIGNUP]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+/* ── Auth: Sign In ── */
+app.post('/api/auth/signin', async (req, res) => {
+  if (!SUPA_URL || !SUPA_KEY) return res.status(503).json({ error: 'Auth not configured' });
+  try {
+    const { email, password } = req.body;
+    const result = await _supaPost('/auth/v1/token?grant_type=password', { email, password });
+    res.json(result);
+  } catch (e) {
+    console.error('[AUTH/SIGNIN]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
+/* ── Auth: Sign Out ── */
+app.post('/api/auth/signout', async (req, res) => {
+  // Client-side token invalidation is sufficient; just acknowledge
+  res.json({ ok: true });
+});
+
+/* ── Auth: Get Session (verify token) ── */
+app.get('/api/auth/user', async (req, res) => {
+  if (!SUPA_URL || !SUPA_KEY) return res.json({ user: null });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.json({ user: null });
+  try {
+    const user = await httpGet(SUPA_URL + '/auth/v1/user', {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + token
+    });
+    res.json({ user: user || null });
+  } catch {
+    res.json({ user: null });
+  }
+});
+
+/* ── Sync: Pull preferences from cloud ── */
+app.get('/api/sync/pull', async (req, res) => {
+  if (!SUPA_URL || !SUPA_KEY) return res.json({ prefs: null, bookmarks: [] });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'No auth token' });
+  try {
+    // Get user ID from token
+    const user = await httpGet(SUPA_URL + '/auth/v1/user', {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + token
+    });
+    if (!user || !user.id) return res.status(401).json({ error: 'Invalid token' });
+
+    // Fetch prefs
+    const prefs = await httpGet(
+      SUPA_URL + `/rest/v1/user_prefs?select=*&user_id=eq.${user.id}`,
+      { ..._supaHeaders(token), 'Accept': 'application/json' }
+    );
+
+    // Fetch bookmarks
+    const bookmarks = await httpGet(
+      SUPA_URL + `/rest/v1/user_bookmarks?select=item_data&user_id=eq.${user.id}&order=created_at.desc`,
+      { ..._supaHeaders(token), 'Accept': 'application/json' }
+    );
+
+    res.json({
+      prefs: Array.isArray(prefs) && prefs.length ? prefs[0] : null,
+      bookmarks: Array.isArray(bookmarks) ? bookmarks.map(b => b.item_data) : []
+    });
+  } catch (e) {
+    console.error('[SYNC/PULL]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/* ── Sync: Push preferences to cloud ── */
+app.post('/api/sync/push', async (req, res) => {
+  if (!SUPA_URL || !SUPA_KEY) return res.status(503).json({ error: 'Not configured' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'No auth token' });
+  try {
+    // Get user ID from token
+    const user = await httpGet(SUPA_URL + '/auth/v1/user', {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + token
+    });
+    if (!user || !user.id) return res.status(401).json({ error: 'Invalid token' });
+
+    const { subreddits, customSubs, interests, settings, bookmarks } = req.body;
+
+    // Upsert preferences
+    const prefsData = JSON.stringify({
+      user_id: user.id,
+      subreddits: subreddits || [],
+      custom_subs: customSubs || [],
+      interests: interests || {},
+      settings: settings || {},
+      updated_at: new Date().toISOString()
+    });
+
+    const prefsUrl = new URL(SUPA_URL + '/rest/v1/user_prefs');
+    await new Promise((resolve, reject) => {
+      const opts = {
+        hostname: prefsUrl.hostname,
+        port: 443,
+        path: prefsUrl.pathname,
+        method: 'POST',
+        headers: {
+          ..._supaHeaders(token),
+          'Prefer': 'resolution=merge-duplicates,return=minimal',
+          'Content-Length': Buffer.byteLength(prefsData)
+        }
+      };
+      const r = https.request(opts, resp => {
+        let b = '';
+        resp.on('data', c => b += c);
+        resp.on('end', () => resp.statusCode < 400 ? resolve() : reject(new Error(`Prefs ${resp.statusCode}: ${b}`)));
+      });
+      r.on('error', reject);
+      r.write(prefsData);
+      r.end();
+    });
+
+    // Delete existing bookmarks
+    await new Promise((resolve, reject) => {
+      const delUrl = new URL(SUPA_URL + `/rest/v1/user_bookmarks?user_id=eq.${user.id}`);
+      const opts = {
+        hostname: delUrl.hostname,
+        port: 443,
+        path: delUrl.pathname + delUrl.search,
+        method: 'DELETE',
+        headers: _supaHeaders(token)
+      };
+      const r = https.request(opts, resp => {
+        let b = '';
+        resp.on('data', c => b += c);
+        resp.on('end', () => resolve());
+      });
+      r.on('error', reject);
+      r.end();
+    });
+
+    // Insert bookmarks
+    if (bookmarks && bookmarks.length) {
+      const bmData = JSON.stringify(bookmarks.map(b => ({
+        user_id: user.id,
+        item_id: b.id,
+        item_data: b
+      })));
+      const bmUrl = new URL(SUPA_URL + '/rest/v1/user_bookmarks');
+      await new Promise((resolve, reject) => {
+        const opts = {
+          hostname: bmUrl.hostname,
+          port: 443,
+          path: bmUrl.pathname,
+          method: 'POST',
+          headers: { ..._supaHeaders(token), 'Content-Length': Buffer.byteLength(bmData) }
+        };
+        const r = https.request(opts, resp => {
+          let b = '';
+          resp.on('data', c => b += c);
+          resp.on('end', () => resp.statusCode < 400 ? resolve() : reject(new Error(`BM ${resp.statusCode}: ${b}`)));
+        });
+        r.on('error', reject);
+        r.write(bmData);
+        r.end();
+      });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[SYNC/PUSH]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/* ═══════════════════════════════════════════════════
    STATUS
    ═══════════════════════════════════════════════════ */
 app.get('/api/status', (_req, res) => {
@@ -628,7 +934,8 @@ app.get('/api/status', (_req, res) => {
       rss: true,
       newsapi: !!process.env.NEWSAPI_KEY,
       guardian: true,
-      wikinews: true
+      wikinews: true,
+      thenewsapi: !!process.env.THENEWSAPI_KEY
     },
     cacheEntries: cache.size,
     uptime: Math.floor(process.uptime())

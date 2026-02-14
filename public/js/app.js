@@ -6,7 +6,7 @@ const App = (() => {
   let allItems = [];
   let filteredItems = [];
   let currentCategory = 'all';
-  let activeSources = new Set(['reddit', 'hackernews', 'rss', 'newsapi', 'guardian', 'wikinews']);
+  let activeSources = new Set(['reddit', 'hackernews', 'rss', 'newsapi', 'guardian', 'wikinews', 'thenewsapi']);
   let refreshTimer = null;
   let searchDebounce = null;
   let nextRefresh = 0;
