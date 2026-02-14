@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SENTINEL // Intelligence Platform</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+</head>
+<body>
+
+  <!-- CRT Scanline Overlay -->
+  <div id="crt-overlay"></div>
+
+  <!-- ═══ HEADER ═══ -->
+  <header id="header">
+    <div class="header-left">
+      <span class="logo">▓ SENTINEL</span>
+      <span class="version">v1.0</span>
+    </div>
+    <nav id="nav-desktop">
+      <button class="nav-btn active" data-view="radar" title="Radar view (R)">◉ RADAR</button>
+      <button class="nav-btn" data-view="feed" title="Feed view (F)">≡ FEED</button>
+      <button class="nav-btn" data-view="map" title="Map view (M)">⊕ MAP</button>
+      <button class="nav-btn" data-view="saved" title="Saved items (S)">★ SAVED</button>
+    </nav>
+    <div class="header-right">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="/ SEARCH..." autocomplete="off" spellcheck="false">
+      </div>
+      <button id="refresh-btn" class="icon-btn" title="Refresh now">⟳</button>
+      <button id="settings-btn" class="icon-btn" title="Settings">⚙</button>
+      <button id="auth-btn" class="icon-btn" title="Sign in">👤</button>
+    </div>
+  </header>
+
+  <!-- ═══ FILTER BAR ═══ -->
+  <div id="filter-bar">
+    <div class="filters">
+      <button class="filter-btn active" data-category="all">ALL</button>
+      <button class="filter-btn" data-category="technology">TECH</button>
+      <button class="filter-btn" data-category="politics">POLITICS</button>
+      <button class="filter-btn" data-category="science">SCIENCE</button>
+      <button class="filter-btn" data-category="business">BUSINESS</button>
+      <button class="filter-btn" data-category="entertainment">ENTERTAIN</button>
+      <button class="filter-btn" data-category="sports">SPORTS</button>
+      <button class="filter-btn" data-category="world">WORLD</button>
+    </div>
+    <div class="source-filters">
+      <label class="source-toggle"><input type="checkbox" data-source="reddit" checked> Reddit</label>
+      <label class="source-toggle"><input type="checkbox" data-source="hackernews" checked> HN</label>
+      <label class="source-toggle"><input type="checkbox" data-source="rss" checked> RSS</label>
+      <label class="source-toggle"><input type="checkbox" data-source="newsapi" checked> NewsAPI</label>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <main id="main">
+
+    <!-- RADAR VIEW -->
+    <div id="view-radar" class="view active">
+      <canvas id="radar-canvas"></canvas>
+      <div id="radar-tooltip" class="tooltip hidden"></div>
+      <div id="radar-info">
+        <span id="radar-count">Scanning...</span>
+      </div>
+    </div>
+
+    <!-- FEED VIEW -->
+    <div id="view-feed" class="view">
+      <div id="feed-container">
+        <div id="feed-list"></div>
+        <div id="feed-loading" class="loading">SCANNING FREQUENCIES...</div>
+        <button id="feed-load-more" class="load-more hidden">▼ LOAD MORE SIGNALS ▼</button>
+      </div>
+    </div>
+
+    <!-- MAP VIEW -->
+    <div id="view-map" class="view">
+      <canvas id="map-canvas"></canvas>
+      <div id="map-tooltip" class="tooltip hidden"></div>
+      <div id="map-info">
+        <span id="map-count">Triangulating...</span>
+      </div>
+    </div>
+
+    <!-- SAVED VIEW -->
+    <div id="view-saved" class="view">
+      <div id="saved-container">
+        <div id="saved-header">
+          <h2>★ SAVED INTELLIGENCE</h2>
+          <button id="clear-saved" class="btn-sm">PURGE ALL</button>
+        </div>
+        <div id="saved-list"></div>
+        <div id="saved-empty" class="empty-state">
+          <p>[ NO SAVED INTEL ]</p>
+          <p class="hint">Bookmark articles from any view to cache them here.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══ ARTICLE DETAIL PANEL ═══ -->
+  <div id="detail-overlay" class="overlay hidden"></div>
+  <div id="detail-panel" class="side-panel hidden">
+    <div class="panel-header">
+      <span class="panel-badge" id="detail-source"></span>
+      <span class="panel-badge" id="detail-category"></span>
+      <button id="detail-close" class="icon-btn" title="Close (Esc)">✕</button>
+    </div>
+    <div class="panel-body">
+      <h2 id="detail-title"></h2>
+      <div class="detail-meta">
+        <span id="detail-author"></span>
+        <span id="detail-time"></span>
+        <span id="detail-score"></span>
+      </div>
+      <img id="detail-image" class="detail-img hidden" alt="">
+      <p id="detail-snippet"></p>
+      <div class="detail-actions">
+        <a id="detail-link" href="#" target="_blank" rel="noopener" class="btn">OPEN SOURCE ↗</a>
+        <a id="detail-comments" href="#" target="_blank" rel="noopener" class="btn btn-outline">DISCUSSION ↗</a>
+        <button id="detail-save" class="btn btn-outline">☆ SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS PANEL ═══ -->
+  <div id="settings-overlay" class="overlay hidden"></div>
+  <div id="settings-panel" class="side-panel hidden">
+    <div class="panel-header">
+      <h2>⚙ CONFIGURATION</h2>
+      <button id="settings-close" class="icon-btn">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="setting-group">
+        <label>Auto-refresh interval (seconds)</label>
+        <input type="number" id="setting-refresh" value="120" min="30" max="600" step="10">
+      </div>
+      <div class="setting-group">
+        <label>CRT Scanline Effect</label>
+        <label class="switch">
+          <input type="checkbox" id="setting-crt" checked>
+          <span>Enabled</span>
+        </label>
+      </div>
+      <div class="setting-group">
+        <label>Radar Sweep Speed</label>
+        <select id="setting-radar-speed">
+          <option value="slow">Slow</option>
+          <option value="normal" selected>Normal</option>
+          <option value="fast">Fast</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <h3>📡 Subreddit Sources</h3>
+        <p class="hint">Toggle subreddits to tailor your feed. More subs = more signals.</p>
+        <div class="sub-counter"><span id="sub-count">0</span> active sources</div>
+        <div id="sub-manager"></div>
+        <div class="sub-custom-add">
+          <input type="text" id="sub-custom-input" placeholder="r/subreddit" spellcheck="false" autocomplete="off">
+          <button id="sub-custom-btn" class="btn">+ ADD</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>Interest Profile</h3>
+        <p class="hint">Your click patterns shape the ranking algorithm</p>
+        <div id="interest-chart"></div>
+      </div>
+      <div class="setting-group">
+        <h3>Keyboard Shortcuts</h3>
+        <div class="shortcuts-list">
+          <div><kbd>R</kbd> Radar view</div>
+          <div><kbd>F</kbd> Feed view</div>
+          <div><kbd>M</kbd> Map view</div>
+          <div><kbd>S</kbd> Saved view</div>
+          <div><kbd>/</kbd> Focus search</div>
+          <div><kbd>Esc</kbd> Close panels</div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <button id="setting-clear-data" class="btn btn-danger">⚠ WIPE ALL LOCAL DATA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ AUTH MODAL ═══ -->
+  <div id="auth-overlay" class="overlay hidden"></div>
+  <div id="auth-modal" class="auth-modal hidden">
+    <div class="auth-header">
+      <span>▓ AUTHENTICATE</span>
+      <button id="auth-modal-close" class="icon-btn">✕</button>
+    </div>
+    <div class="auth-tabs" id="auth-tabs">
+      <button class="auth-tab active" data-tab="signin">SIGN IN</button>
+      <button class="auth-tab" data-tab="signup">SIGN UP</button>
+    </div>
+    <form id="auth-form" autocomplete="off">
+      <div class="auth-field">
+        <label>EMAIL</label>
+        <input type="email" id="auth-email" required spellcheck="false" placeholder="operator@sentinel.io">
+      </div>
+      <div class="auth-field">
+        <label>PASSWORD</label>
+        <input type="password" id="auth-password" required minlength="6" placeholder="••••••••">
+      </div>
+      <button type="submit" class="auth-submit">▸ AUTHENTICATE</button>
+      <div id="auth-status" class="auth-status">> Awaiting credentials...</div>
+    </form>
+    <div id="auth-user-info" class="auth-user-info hidden">
+      <div class="auth-user-email" id="auth-user-email"></div>
+      <div class="auth-user-since" id="auth-user-since">Session active</div>
+      <div class="auth-sync-label" id="auth-sync-status">☁ Synced to cloud</div>
+      <button id="auth-signout" class="btn btn-danger">◉ SIGN OUT</button>
+    </div>
+  </div>
+
+  <!-- ═══ STATUS BAR ═══ -->
+  <footer id="status-bar">
+    <span id="status-connection">● ONLINE</span>
+    <span id="status-sources">Sources: —</span>
+    <span id="status-items">Signals: —</span>
+    <span id="status-refresh">Next scan: —</span>
+    <span id="status-time" class="status-right"></span>
+  </footer>
+
+  <!-- ═══ MOBILE BOTTOM NAV ═══ -->
+  <nav id="mobile-nav">
+    <button class="mobile-nav-btn active" data-view="radar">
+      <span class="mnav-icon">◉</span>
+      <span class="mnav-label">Radar</span>
+    </button>
+    <button class="mobile-nav-btn" data-view="feed">
+      <span class="mnav-icon">≡</span>
+      <span class="mnav-label">Feed</span>
+    </button>
+    <button class="mobile-nav-btn" data-view="map">
+      <span class="mnav-icon">⊕</span>
+      <span class="mnav-label">Map</span>
+    </button>
+    <button class="mobile-nav-btn" data-view="saved">
+      <span class="mnav-icon">★</span>
+      <span class="mnav-label">Saved</span>
+    </button>
+  </nav>
+
+  <!-- ═══ SCRIPTS ═══ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/store.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/radar.js"></script>
+  <script src="/js/worldmap.js"></script>
+  <script src="/js/timeline.js"></script>
+  <script src="/js/app.js"></script>
+
+</body>
+</html>
