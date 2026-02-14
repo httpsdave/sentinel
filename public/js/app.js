@@ -155,6 +155,12 @@ const App = (() => {
       }
     });
 
+    // ── Account button in settings ──
+    document.getElementById('setting-auth-btn')?.addEventListener('click', () => {
+      togglePanel('settings');
+      setTimeout(openAuthModal, 150);
+    });
+
     // ── Subreddit manager ──
     document.getElementById('sub-custom-btn')?.addEventListener('click', addCustomSub);
     document.getElementById('sub-custom-input')?.addEventListener('keydown', e => {
@@ -477,6 +483,23 @@ const App = (() => {
     if (opening && name === 'settings') {
       renderInterests();
       renderSubManager();
+      // Update auth button label
+      const user = Auth.getUser();
+      const authBtn = document.getElementById('setting-auth-btn');
+      const authHint = document.getElementById('setting-auth-hint');
+      if (authBtn) {
+        if (user) {
+          authBtn.textContent = '◉ SIGNED IN: ' + user.email;
+          authBtn.style.borderColor = 'var(--green-dark)';
+          authBtn.style.color = 'var(--green-dim)';
+          if (authHint) authHint.textContent = 'Syncing preferences to cloud.';
+        } else {
+          authBtn.textContent = '▸ SIGN IN / SIGN UP';
+          authBtn.style.borderColor = '';
+          authBtn.style.color = '';
+          if (authHint) authHint.textContent = 'Sign in to sync preferences across devices.';
+        }
+      }
     }
   }
 

@@ -1183,7 +1183,10 @@ kbd {
 
 /* ── RESPONSIVE ────────────────────────────────────── */
 @media (max-width: 768px) {
-  :root { --panel-w: 100%; }
+  :root {
+    --panel-w: 100%;
+    --filter-h: 82px;  /* two-row filter bar */
+  }
 
   #nav-desktop { display: none; }
   #mobile-nav { display: flex; }
@@ -1191,26 +1194,54 @@ kbd {
 
   #main { bottom: var(--mobile-nav-h); }
 
+  /* Header: keep search + settings + auth, hide mute + refresh */
   .search-box input { width: 140px; font-size: 15px; }
-  #settings-btn { display: none; }
+  #mute-btn { display: none; }
+  #refresh-btn { display: none; }
 
-  .source-filters { display: none; }
+  /* Filter bar: two rows — categories + source toggles */
+  #filter-bar {
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 2px 8px;
+    padding: 4px 10px;
+  }
+  .filters { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .source-filters {
+    display: flex;
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 8px;
+    padding: 2px 0;
+  }
+  .source-filters::-webkit-scrollbar { display: none; }
+  .source-toggle { font-size: 12px; gap: 3px; }
+  .source-toggle input { width: 13px; height: 13px; }
+
+  .filter-btn { font-size: 14px; padding: 5px 10px; }
   .feed-thumb { width: 70px; height: 50px; }
   .feed-score { min-width: 52px; font-size: 17px; }
   .feed-title { font-size: 17px; }
-
-  .filter-btn { font-size: 14px; padding: 5px 10px; }
-  #filter-bar { gap: 8px; }
 }
 
 @media (max-width: 480px) {
+  :root {
+    --filter-h: 76px;
+  }
   .logo { font-size: 18px; letter-spacing: 2px; }
   .version { display: none; }
-  .search-box input { width: 110px; font-size: 14px; }
+  #auth-btn { display: none; }  /* accessible via settings panel */
+  .search-box input { width: 100px; font-size: 14px; }
+  .icon-btn { width: 34px; height: 34px; font-size: 17px; }
   .feed-thumb { display: none; }
   .feed-score { min-width: 44px; font-size: 16px; }
-  #filter-bar { padding: 0 6px; }
-  .filter-btn { padding: 4px 8px; font-size: 13px; }
+  #filter-bar { padding: 2px 6px; gap: 1px 6px; }
+  .filter-btn { padding: 4px 8px; font-size: 12px; }
+  .source-toggle { font-size: 11px; }
+  .source-toggle input { width: 12px; height: 12px; }
 }
 
 /* ── Share Button + Mute Button ─────────────────────── */
@@ -1229,4 +1260,15 @@ kbd {
 }
 #mute-btn:hover {
   opacity: 0.7;
+}
+
+.setting-account {
+  border: 1px solid var(--green-dark);
+  padding: 14px !important;
+  background: var(--green-subtle);
+}
+.setting-account .btn {
+  width: 100%;
+  text-align: center;
+  padding: 10px;
 }
