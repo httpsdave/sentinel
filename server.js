@@ -132,6 +132,32 @@ const DEFAULT_FEEDS = [
 ];
 
 /* ═══════════════════════════════════════════════════
+   LOCAL NEWS COUNTRY SUBREDDITS — country-specific subs
+   ═══════════════════════════════════════════════════ */
+const COUNTRY_SUBS = {
+  us: ['news','politics','usa'],
+  gb: ['ukpolitics','unitedkingdom','CasualUK'],
+  ca: ['canada','canadapolitics','onguardforthee'],
+  au: ['australia','AustralianPolitics'],
+  de: ['de','germany'],
+  fr: ['france','French'],
+  in: ['india','IndiaSpeaks','indianews'],
+  jp: ['japan','newsokur'],
+  br: ['brasil','BrazilNews'],
+  za: ['southafrica'],
+  ng: ['Nigeria'],
+  ae: ['dubai','UAE'],
+  sg: ['singapore'],
+  kr: ['korea'],
+  mx: ['mexico'],
+  it: ['italy'],
+  es: ['spain','es'],
+  nl: ['thenetherlands'],
+  se: ['sweden'],
+  pl: ['Polska','poland']
+};
+
+/* ═══════════════════════════════════════════════════
    INTERNAL DATA FETCHERS
    ═══════════════════════════════════════════════════ */
 async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t = 'day') {
@@ -290,6 +316,82 @@ async function _fetchRSS() {
 }
 
 /* ═══════════════════════════════════════════════════
+   THE GUARDIAN — Open Platform API (free, no key required
+   for basic access — uses 'test' key)
+   ═══════════════════════════════════════════════════ */
+async function _fetchGuardian(section = '', limit = 25) {
+  const ck = `guardian:${section}:${limit}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    let url = `https://content.guardianapis.com/search?api-key=test&page-size=${limit}&show-fields=thumbnail,trailText&order-by=newest`;
+    if (section) url += `&section=${encodeURIComponent(section)}`;
+
+    const data = await httpGet(url);
+    if (!data || !data.response || !data.response.results) return [];
+
+    const items = data.response.results.map(a => ({
+      id: 'guardian_' + (a.id || '').replace(/[^a-z0-9]/gi, '_'),
+      title: a.webTitle || '',
+      url: a.webUrl || '',
+      permalink: a.webUrl || '',
+      source: 'guardian',
+      sourceDetail: 'The Guardian',
+      score: 0,
+      comments: 0,
+      thumbnail: a.fields?.thumbnail || null,
+      created: a.webPublicationDate ? new Date(a.webPublicationDate).getTime() : Date.now(),
+      author: '',
+      snippet: (a.fields?.trailText || '').replace(/<[^>]+>/g, '').substring(0, 250),
+      domain: 'theguardian.com',
+      category: guessCategory(a.sectionId || '', a.webTitle || '')
+    }));
+
+    setCache(ck, items);
+    return items;
+  } catch (err) {
+    console.error('[GUARDIAN]', err.message);
+    return [];
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   WIKINEWS — Free RSS feed
+   ═══════════════════════════════════════════════════ */
+async function _fetchWikinews() {
+  const ck = 'wikinews';
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    const feed = await rssParser.parseURL('https://en.wikinews.org/w/index.php?title=Special:NewsFeed&feed=rss');
+    const items = (feed.items || []).slice(0, 20).map(item => ({
+      id: 'wiki_' + (item.guid || item.link || item.title || '').replace(/[^a-z0-9]/gi, '_').substring(0, 80),
+      title: item.title || '',
+      url: item.link || '',
+      permalink: item.link || '',
+      source: 'wikinews',
+      sourceDetail: 'WikiNews',
+      score: 0,
+      comments: 0,
+      thumbnail: null,
+      created: item.pubDate ? new Date(item.pubDate).getTime() : Date.now(),
+      author: item.creator || '',
+      snippet: (item.contentSnippet || '').substring(0, 250).replace(/<[^>]+>/g, ''),
+      domain: 'en.wikinews.org',
+      category: guessCategory('world', item.title || '')
+    }));
+
+    setCache(ck, items);
+    return items;
+  } catch (err) {
+    console.error('[WIKINEWS]', err.message);
+    return [];
+  }
+}
+
+/* ═══════════════════════════════════════════════════
    ROUTE HANDLERS
    ═══════════════════════════════════════════════════ */
 app.get('/api/reddit', async (req, res) => {
@@ -317,19 +419,105 @@ app.get('/api/rss', async (req, res) => {
 });
 
 /* ═══════════════════════════════════════════════════
+   COMMENTS — Fetch discussion threads from source
+   Reddit: top-level comments from permalink
+   HN: recursive kid fetch (depth 2)
+   ═══════════════════════════════════════════════════ */
+app.get('/api/comments', async (req, res) => {
+  try {
+    const { source, permalink, id } = req.query;
+
+    if (source === 'reddit' && permalink) {
+      // permalink should be path like /r/technology/comments/abc/title/
+      const url = `https://www.reddit.com${permalink}.json?limit=15&depth=2&sort=top`;
+      const data = await httpGet(url, { 'User-Agent': 'Sentinel/1.0 (news aggregator; compatible)' });
+      const comments = [];
+      if (Array.isArray(data) && data[1]?.data?.children) {
+        for (const c of data[1].data.children.slice(0, 15)) {
+          if (c.kind !== 't1') continue;
+          const d = c.data;
+          const replies = [];
+          if (d.replies?.data?.children) {
+            for (const r of d.replies.data.children.slice(0, 3)) {
+              if (r.kind !== 't1') continue;
+              replies.push({
+                author: r.data.author || '[deleted]',
+                text: (r.data.body || '').substring(0, 500),
+                score: r.data.score || 0,
+                time: (r.data.created_utc || 0) * 1000
+              });
+            }
+          }
+          comments.push({
+            author: d.author || '[deleted]',
+            text: (d.body || '').substring(0, 800),
+            score: d.score || 0,
+            time: (d.created_utc || 0) * 1000,
+            replies
+          });
+        }
+      }
+      return res.json({ source: 'reddit', comments });
+    }
+
+    if (source === 'hackernews' && id) {
+      const item = await httpGet(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+      const comments = [];
+      const kids = (item.kids || []).slice(0, 12);
+
+      for (const kidId of kids) {
+        try {
+          const kid = await httpGet(`https://hacker-news.firebaseio.com/v0/item/${kidId}.json`);
+          if (!kid || kid.deleted || kid.dead) continue;
+          const replies = [];
+          for (const replyId of (kid.kids || []).slice(0, 3)) {
+            try {
+              const reply = await httpGet(`https://hacker-news.firebaseio.com/v0/item/${replyId}.json`);
+              if (reply && !reply.deleted && !reply.dead) {
+                replies.push({
+                  author: reply.by || 'anon',
+                  text: (reply.text || '').replace(/<[^>]+>/g, '').substring(0, 500),
+                  score: reply.score || 0,
+                  time: (reply.time || 0) * 1000
+                });
+              }
+            } catch {}
+          }
+          comments.push({
+            author: kid.by || 'anon',
+            text: (kid.text || '').replace(/<[^>]+>/g, '').substring(0, 800),
+            score: kid.score || 0,
+            time: (kid.time || 0) * 1000,
+            replies
+          });
+        } catch {}
+      }
+      return res.json({ source: 'hackernews', comments });
+    }
+
+    res.json({ source: source || 'unknown', comments: [] });
+  } catch (e) {
+    console.error('[COMMENTS]', e.message);
+    res.json({ source: req.query.source || 'unknown', comments: [] });
+  }
+});
+
+/* ═══════════════════════════════════════════════════
    AGGREGATED FEED
    Reddit fetched SEQUENTIALLY with delays to avoid
    rate-limiting. Never returns 500 — always returns [].
    ═══════════════════════════════════════════════════ */
 app.get('/api/feed', async (req, res) => {
   try {
-    const { category, search, subs } = req.query;
+    const { category, search, subs, country } = req.query;
 
     // Non-Reddit sources in parallel
-    const [hn, rss, news] = await Promise.all([
+    const [hn, rss, news, guardian, wikinews] = await Promise.all([
       _fetchHN('top', 30).catch(e => { console.error('[FEED/HN]', e.message); return []; }),
       _fetchRSS().catch(e => { console.error('[FEED/RSS]', e.message); return []; }),
       _fetchNews('', category || 'general').catch(e => { console.error('[FEED/NEWS]', e.message); return []; }),
+      _fetchGuardian('', 25).catch(e => { console.error('[FEED/GUARDIAN]', e.message); return []; }),
+      _fetchWikinews().catch(e => { console.error('[FEED/WIKINEWS]', e.message); return []; }),
     ]);
 
     // Reddit — accept custom list from frontend, or use defaults
@@ -357,8 +545,24 @@ app.get('/api/feed', async (req, res) => {
       if (i + BATCH_SIZE < requestedSubs.length) await sleep(200);
     }
 
-    let items = [...hn, ...rss, ...news, ...redditPosts];
-    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Reddit=${redditPosts.length} Total=${items.length}`);
+    // Local news: add country-specific Reddit subs
+    const localPosts = [];
+    if (country && country !== 'auto' && COUNTRY_SUBS[country]) {
+      const localSubs = COUNTRY_SUBS[country].filter(s => !requestedSubs.includes(s));
+      for (let i = 0; i < localSubs.length; i += BATCH_SIZE) {
+        const batch = localSubs.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map(sub => _fetchReddit(sub, 'hot', 10))
+        );
+        for (const r of results) {
+          if (r.status === 'fulfilled' && Array.isArray(r.value)) localPosts.push(...r.value);
+        }
+        if (i + BATCH_SIZE < localSubs.length) await sleep(200);
+      }
+    }
+
+    let items = [...hn, ...rss, ...news, ...guardian, ...wikinews, ...redditPosts, ...localPosts];
+    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
 
     // De-duplicate
     const seen = new Set();
@@ -416,7 +620,9 @@ app.get('/api/status', (_req, res) => {
       reddit: true,
       hackernews: true,
       rss: true,
-      newsapi: !!process.env.NEWSAPI_KEY
+      newsapi: !!process.env.NEWSAPI_KEY,
+      guardian: true,
+      wikinews: true
     },
     cacheEntries: cache.size,
     uptime: Math.floor(process.uptime())

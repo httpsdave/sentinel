@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════
    RADAR — Animated radar sweep with news blips
+   + Web Audio API sweep/ping sounds
    ═══════════════════════════════════════════════════ */
 const Radar = (() => {
   let canvas, ctx;
@@ -11,6 +12,12 @@ const Radar = (() => {
   let speedMul = 1;
   let dpr = 1;
   let W = 0, H = 0;                    // CSS dimensions
+
+  /* ── Audio Engine ────────────────────────────────── */
+  let audioCtx = null;
+  let soundEnabled = false;
+  let lastSweepPing = 0;
+  let lastBlipPing = 0;
 
   /* ── Init ────────────────────────────────────────── */
   function init(el) {
@@ -38,6 +45,58 @@ const Radar = (() => {
   }
 
   function setSpeed(s) { speedMul = s === 'slow' ? 0.4 : s === 'fast' ? 2.2 : 1; }
+
+  function setSound(on) {
+    soundEnabled = !!on;
+    if (soundEnabled && !audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { console.warn('[RADAR] AudioContext not available'); soundEnabled = false; }
+    }
+  }
+
+  function _ensureAudio() {
+    if (!audioCtx) return false;
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    return audioCtx.state !== 'closed';
+  }
+
+  /* Sweep ping: low-pitched sonar blip every full rotation */
+  function _playSweepPing() {
+    if (!soundEnabled || !_ensureAudio()) return;
+    const now = performance.now();
+    if (now - lastSweepPing < 2000) return;  // debounce
+    lastSweepPing = now;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.035, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.25);
+  }
+
+  /* Blip detection: short high-pitched tick when sweep hits a blip */
+  function _playBlipPing() {
+    if (!soundEnabled || !_ensureAudio()) return;
+    const now = performance.now();
+    if (now - lastBlipPing < 80) return;  // debounce rapid multi-hits
+    lastBlipPing = now;
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.06);
+  }
 
   /* ── Data ────────────────────────────────────────── */
   function setItems(arr) {
@@ -84,14 +143,19 @@ const Radar = (() => {
   }
 
   function update() {
+    const prevAngle = angle;
     angle += 0.007 * speedMul;
-    if (angle > Math.PI * 2) angle -= Math.PI * 2;
+    if (angle > Math.PI * 2) {
+      angle -= Math.PI * 2;
+      _playSweepPing();   // ping on each full rotation
+    }
 
     const now = Date.now();
     blips.forEach(b => {
       let diff = angle - b.a;
       if (diff < 0) diff += Math.PI * 2;
       if (diff < 0.12) {
+        if (!b.lit) _playBlipPing();   // ping when sweep first hits blip
         b.lit = true;
         b.litAt = now;
         b.alpha = 1;
@@ -284,5 +348,5 @@ const Radar = (() => {
 
   function destroy() { stop(); window.removeEventListener('resize', resize); }
 
-  return { init, setItems, setSpeed, start, stop, resize, destroy };
+  return { init, setItems, setSpeed, setSound, start, stop, resize, destroy };
 })();

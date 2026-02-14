@@ -235,6 +235,55 @@ const Store = (() => {
 
   function clearBookmarks() { _set('bookmarks', []); }
 
+  /* ── Reactions (Like / Dislike / Block / Show Less) ─ */
+  function getReactions() { return _get('reactions', {}); }
+
+  function likeItem(id, category, sourceDetail) {
+    const r = getReactions();
+    r[id] = { type: 'like', category: category || 'general', source: sourceDetail || '' };
+    _set('reactions', r);
+  }
+
+  function dislikeItem(id, category, sourceDetail) {
+    const r = getReactions();
+    r[id] = { type: 'dislike', category: category || 'general', source: sourceDetail || '' };
+    _set('reactions', r);
+  }
+
+  function removeReaction(id) {
+    const r = getReactions();
+    delete r[id];
+    _set('reactions', r);
+  }
+
+  function getReaction(id) {
+    return (getReactions()[id] || {}).type || null;
+  }
+
+  function getBlocked() { return _get('blocked', []); }
+
+  function blockItem(id) {
+    const b = getBlocked();
+    if (!b.includes(id)) { b.push(id); _set('blocked', b); }
+  }
+
+  function unblockItem(id) {
+    _set('blocked', getBlocked().filter(x => x !== id));
+  }
+
+  function isBlocked(id) { return getBlocked().includes(id); }
+
+  function getShowLess() { return _get('showLess', []); }
+
+  function showLessSource(sourceDetail) {
+    const sl = getShowLess();
+    if (!sl.includes(sourceDetail)) { sl.push(sourceDetail); _set('showLess', sl); }
+  }
+
+  function removeShowLess(sourceDetail) {
+    _set('showLess', getShowLess().filter(x => x !== sourceDetail));
+  }
+
   /* ── Interest Tracking ──────────────────────────── */
   function getInterests() { return _get('interests', {}); }
 
@@ -264,12 +313,28 @@ const Store = (() => {
     const subDetail = (item.sourceDetail || '').replace('r/', '');
     const subBoost = selectedSubs.some(s => s.toLowerCase() === subDetail.toLowerCase()) ? 1.3 : 1.0;
 
+    // Reaction-based category boost/penalty
+    const reactions = getReactions();
+    let catLikes = 0, catDislikes = 0;
+    for (const r of Object.values(reactions)) {
+      if (r.category === item.category) {
+        if (r.type === 'like') catLikes++;
+        else if (r.type === 'dislike') catDislikes++;
+      }
+    }
+    const reactionMul = Math.max(0.1, 1 + (catLikes * 0.15) - (catDislikes * 0.25));
+
+    // Show-less source penalty
+    const showLessMul = getShowLess().includes(item.sourceDetail) ? 0.2 : 1.0;
+
     const recencyDecay = Math.pow(ageHours + 2, 1.3);
-    return (engagement * interestBoost * subBoost + 1) / recencyDecay;
+    return (engagement * interestBoost * subBoost * reactionMul * showLessMul + 1) / recencyDecay;
   }
 
   function rankItems(items) {
+    const blockedIds = getBlocked();
     return items
+      .filter(i => !blockedIds.includes(i.id))
       .map(i => ({ ...i, _rank: scoreItem(i) }))
       .sort((a, b) => b._rank - a._rank);
   }
@@ -278,7 +343,9 @@ const Store = (() => {
   const DEFAULT_SETTINGS = {
     refreshInterval: 120,
     crtEffect: true,
-    radarSpeed: 'normal'
+    radarSpeed: 'normal',
+    sound: false,
+    country: 'auto'
   };
 
   function getSettings() { return { ...DEFAULT_SETTINGS, ..._get('settings', {}) }; }
@@ -296,7 +363,10 @@ const Store = (() => {
       customSubs: getCustomSubreddits(),
       interests: getInterests(),
       settings: _get('settings', {}),
-      bookmarks: getBookmarks()
+      bookmarks: getBookmarks(),
+      reactions: getReactions(),
+      blocked: getBlocked(),
+      showLess: getShowLess()
     };
   }
 
@@ -307,18 +377,24 @@ const Store = (() => {
     if (data.interests !== undefined) _set('interests', data.interests);
     if (data.settings !== undefined) _set('settings', data.settings);
     if (data.bookmarks !== undefined) _set('bookmarks', data.bookmarks);
+    if (data.reactions !== undefined) _set('reactions', data.reactions);
+    if (data.blocked !== undefined) _set('blocked', data.blocked);
+    if (data.showLess !== undefined) _set('showLess', data.showLess);
     _importing = false;
   }
 
   /* ── Reset ──────────────────────────────────────── */
   function clearAll() {
-    ['bookmarks', 'interests', 'settings', 'subreddits', 'customSubs'].forEach(k =>
+    ['bookmarks', 'interests', 'settings', 'subreddits', 'customSubs', 'reactions', 'blocked', 'showLess'].forEach(k =>
       localStorage.removeItem(PREFIX + k)
     );
   }
 
   return {
     getBookmarks, addBookmark, removeBookmark, isBookmarked, clearBookmarks,
+    getReactions, likeItem, dislikeItem, removeReaction, getReaction,
+    getBlocked, blockItem, unblockItem, isBlocked,
+    getShowLess, showLessSource, removeShowLess,
     getInterests, trackClick, getInterestScore,
     scoreItem, rankItems,
     getSettings, saveSetting,

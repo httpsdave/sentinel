@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SENTINEL // Intelligence Platform</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 </head>
 <body>
@@ -28,6 +29,7 @@
       <div class="search-box">
         <input type="text" id="search-input" placeholder="/ SEARCH..." autocomplete="off" spellcheck="false">
       </div>
+      <button id="mute-btn" class="icon-btn" title="Toggle radar sound">🔊</button>
       <button id="refresh-btn" class="icon-btn" title="Refresh now">⟳</button>
       <button id="settings-btn" class="icon-btn" title="Settings">⚙</button>
       <button id="auth-btn" class="icon-btn" title="Sign in">👤</button>
@@ -51,6 +53,8 @@
       <label class="source-toggle"><input type="checkbox" data-source="hackernews" checked> HN</label>
       <label class="source-toggle"><input type="checkbox" data-source="rss" checked> RSS</label>
       <label class="source-toggle"><input type="checkbox" data-source="newsapi" checked> NewsAPI</label>
+      <label class="source-toggle"><input type="checkbox" data-source="guardian" checked> Guardian</label>
+      <label class="source-toggle"><input type="checkbox" data-source="wikinews" checked> WikiNews</label>
     </div>
   </div>
 
@@ -77,8 +81,7 @@
 
     <!-- MAP VIEW -->
     <div id="view-map" class="view">
-      <canvas id="map-canvas"></canvas>
-      <div id="map-tooltip" class="tooltip hidden"></div>
+      <div id="map-container"></div>
       <div id="map-info">
         <span id="map-count">Triangulating...</span>
       </div>
@@ -120,8 +123,21 @@
       <p id="detail-snippet"></p>
       <div class="detail-actions">
         <a id="detail-link" href="#" target="_blank" rel="noopener" class="btn">OPEN SOURCE ↗</a>
-        <a id="detail-comments" href="#" target="_blank" rel="noopener" class="btn btn-outline">DISCUSSION ↗</a>
+        <a id="detail-comments-link" href="#" target="_blank" rel="noopener" class="btn btn-outline">DISCUSSION ↗</a>
         <button id="detail-save" class="btn btn-outline">☆ SAVE</button>
+        <button id="detail-share" class="btn btn-outline" title="Share / Copy link">⎘ SHARE</button>
+      </div>
+      <div class="detail-reactions">
+        <button id="detail-like" class="react-btn" title="Like — boost similar content">👍 LIKE</button>
+        <button id="detail-dislike" class="react-btn" title="Dislike — show less like this">👎 DISLIKE</button>
+        <button id="detail-showless" class="react-btn" title="Show less from this source">📉 SHOW LESS</button>
+        <button id="detail-block" class="react-btn react-danger" title="Block — never show again">🚫 BLOCK</button>
+      </div>
+      <div id="detail-discussion" class="detail-discussion">
+        <h3 class="discussion-header">💬 DISCUSSION</h3>
+        <div id="discussion-loading" class="discussion-loading hidden">Scanning threads...</div>
+        <div id="discussion-list" class="discussion-list"></div>
+        <div id="discussion-empty" class="discussion-empty hidden">No discussion data available for this source.</div>
       </div>
     </div>
   </div>
@@ -144,6 +160,40 @@
           <input type="checkbox" id="setting-crt" checked>
           <span>Enabled</span>
         </label>
+      </div>
+      <div class="setting-group">
+        <label>Radar Sound</label>
+        <label class="switch">
+          <input type="checkbox" id="setting-sound">
+          <span>Enabled</span>
+        </label>
+      </div>
+      <div class="setting-group">
+        <label>Local News Region</label>
+        <select id="setting-country">
+          <option value="auto">Auto-detect</option>
+          <option value="us">🇺🇸 United States</option>
+          <option value="gb">🇬🇧 United Kingdom</option>
+          <option value="ca">🇨🇦 Canada</option>
+          <option value="au">🇦🇺 Australia</option>
+          <option value="de">🇩🇪 Germany</option>
+          <option value="fr">🇫🇷 France</option>
+          <option value="in">🇮🇳 India</option>
+          <option value="jp">🇯🇵 Japan</option>
+          <option value="br">🇧🇷 Brazil</option>
+          <option value="za">🇿🇦 South Africa</option>
+          <option value="ng">🇳🇬 Nigeria</option>
+          <option value="ae">🇦🇪 UAE</option>
+          <option value="sg">🇸🇬 Singapore</option>
+          <option value="kr">🇰🇷 South Korea</option>
+          <option value="mx">🇲🇽 Mexico</option>
+          <option value="it">🇮🇹 Italy</option>
+          <option value="es">🇪🇸 Spain</option>
+          <option value="nl">🇳🇱 Netherlands</option>
+          <option value="se">🇸🇪 Sweden</option>
+          <option value="pl">🇵🇱 Poland</option>
+        </select>
+        <p class="hint">Adds local headlines from your selected region.</p>
       </div>
       <div class="setting-group">
         <label>Radar Sweep Speed</label>
@@ -246,6 +296,7 @@
   </nav>
 
   <!-- ═══ SCRIPTS ═══ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/store.js"></script>
   <script src="/js/api.js"></script>

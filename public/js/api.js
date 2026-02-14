@@ -13,6 +13,7 @@ const API = (() => {
     const p = new URLSearchParams();
     if (opts.category && opts.category !== 'all') p.set('category', opts.category);
     if (opts.search) p.set('search', opts.search);
+    if (opts.country && opts.country !== 'auto') p.set('country', opts.country);
     // Send user's selected subreddits
     const subs = Store.getSubreddits();
     if (subs && subs.length) p.set('subs', subs.join(','));
@@ -39,5 +40,10 @@ const API = (() => {
     return _json('/api/status');
   }
 
-  return { getFeed, getReddit, getHackerNews, getNews, getRSS, getStatus };
+  async function getComments(source, params = {}) {
+    const qs = new URLSearchParams({ source, ...params });
+    return _json('/api/comments?' + qs);
+  }
+
+  return { getFeed, getReddit, getHackerNews, getNews, getRSS, getStatus, getComments };
 })();

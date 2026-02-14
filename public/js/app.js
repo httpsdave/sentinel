@@ -6,7 +6,7 @@ const App = (() => {
   let allItems = [];
   let filteredItems = [];
   let currentCategory = 'all';
-  let activeSources = new Set(['reddit', 'hackernews', 'rss', 'newsapi']);
+  let activeSources = new Set(['reddit', 'hackernews', 'rss', 'newsapi', 'guardian', 'wikinews']);
   let refreshTimer = null;
   let searchDebounce = null;
   let nextRefresh = 0;
@@ -16,7 +16,7 @@ const App = (() => {
   async function init() {
     // Modules
     Radar.init(document.getElementById('radar-canvas'));
-    WorldMap.init(document.getElementById('map-canvas'));
+    WorldMap.init(document.getElementById('map-container'));
     Timeline.init(document.getElementById('feed-list'));
 
     // Apply saved settings
@@ -26,6 +26,13 @@ const App = (() => {
     document.getElementById('setting-refresh').value = cfg.refreshInterval;
     document.getElementById('setting-radar-speed').value = cfg.radarSpeed;
     Radar.setSpeed(cfg.radarSpeed);
+
+    // Sound & country settings
+    Radar.setSound(cfg.sound);
+    document.getElementById('setting-sound').checked = cfg.sound;
+    const muteBtn = document.getElementById('mute-btn');
+    muteBtn.textContent = cfg.sound ? '🔊' : '🔇';
+    document.getElementById('setting-country').value = cfg.country || 'auto';
 
     // ── Nav (desktop + mobile) ──
     document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
@@ -75,6 +82,69 @@ const App = (() => {
     document.getElementById('setting-refresh')?.addEventListener('change', e => {
       Store.saveSetting('refreshInterval', parseInt(e.target.value) || 120);
       scheduleRefresh();
+    });
+
+    // ── Mute button (header) ──
+    document.getElementById('mute-btn')?.addEventListener('click', () => {
+      const current = Store.getSettings().sound;
+      const next = !current;
+      Store.saveSetting('sound', next);
+      Radar.setSound(next);
+      document.getElementById('mute-btn').textContent = next ? '🔊' : '🔇';
+      document.getElementById('setting-sound').checked = next;
+    });
+
+    // ── Sound toggle (settings panel) ──
+    document.getElementById('setting-sound')?.addEventListener('change', e => {
+      Store.saveSetting('sound', e.target.checked);
+      Radar.setSound(e.target.checked);
+      document.getElementById('mute-btn').textContent = e.target.checked ? '🔊' : '🔇';
+    });
+
+    // ── Country / Local News selector ──
+    document.getElementById('setting-country')?.addEventListener('change', e => {
+      Store.saveSetting('country', e.target.value);
+      loadFeed();   // reload with new country context
+    });
+
+    // ── Share button (detail panel) ──
+    document.getElementById('detail-share')?.addEventListener('click', async () => {
+      const url = document.getElementById('detail-link').href;
+      const title = document.getElementById('detail-title').textContent;
+      const btn = document.getElementById('detail-share');
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, url });
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') return;  // user cancelled
+        }
+      }
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        btn.textContent = '✓ COPIED';
+        btn.classList.add('share-copied');
+        setTimeout(() => {
+          btn.textContent = '⎘ SHARE';
+          btn.classList.remove('share-copied');
+        }, 2000);
+      } catch {
+        // Final fallback: select text
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '✓ COPIED';
+        btn.classList.add('share-copied');
+        setTimeout(() => {
+          btn.textContent = '⎘ SHARE';
+          btn.classList.remove('share-copied');
+        }, 2000);
+      }
     });
     document.getElementById('setting-clear-data')?.addEventListener('click', () => {
       if (confirm('Wipe all local data and preferences?')) {
@@ -147,7 +217,8 @@ const App = (() => {
   async function loadFeed() {
     setConnectionStatus('scanning');
     try {
-      allItems = await API.getFeed();
+      const country = Store.getSettings().country || 'auto';
+      allItems = await API.getFeed({ country });
       applyFilters();
       setConnectionStatus('online');
       document.getElementById('status-items').textContent = 'Signals: ' + allItems.length;
@@ -202,7 +273,7 @@ const App = (() => {
     document.getElementById('detail-score').textContent = `▲ ${item.score || 0} · 💬 ${item.comments || 0}`;
     document.getElementById('detail-snippet').textContent = item.snippet || 'No preview available.';
     document.getElementById('detail-link').href = item.url || '#';
-    document.getElementById('detail-comments').href = item.permalink || item.url || '#';
+    document.getElementById('detail-comments-link').href = item.permalink || item.url || '#';
 
     const img = document.getElementById('detail-image');
     if (item.thumbnail) {
@@ -225,8 +296,129 @@ const App = (() => {
       updateSaveBtn(saveBtn, item);
     };
 
+    // ── Reaction buttons ──
+    updateReactionButtons(item);
+
+    document.getElementById('detail-like').onclick = () => {
+      const cur = Store.getReaction(item.id);
+      if (cur === 'like') Store.removeReaction(item.id);
+      else Store.likeItem(item.id, item.category, item.sourceDetail);
+      updateReactionButtons(item);
+    };
+
+    document.getElementById('detail-dislike').onclick = () => {
+      const cur = Store.getReaction(item.id);
+      if (cur === 'dislike') Store.removeReaction(item.id);
+      else Store.dislikeItem(item.id, item.category, item.sourceDetail);
+      updateReactionButtons(item);
+    };
+
+    document.getElementById('detail-showless').onclick = () => {
+      const src = item.sourceDetail || item.source;
+      if (Store.getShowLess().includes(src)) {
+        Store.removeShowLess(src);
+      } else {
+        Store.showLessSource(src);
+      }
+      updateReactionButtons(item);
+      applyFilters();
+    };
+
+    document.getElementById('detail-block').onclick = () => {
+      Store.blockItem(item.id);
+      hideDetail();
+      applyFilters();
+    };
+
+    // ── Load discussion / comments ──
+    loadComments(item);
+
     document.getElementById('detail-panel').classList.remove('hidden');
     document.getElementById('detail-overlay').classList.remove('hidden');
+  }
+
+  function updateReactionButtons(item) {
+    const reaction = Store.getReaction(item.id);
+    const likeBtn = document.getElementById('detail-like');
+    const dislikeBtn = document.getElementById('detail-dislike');
+    const showLessBtn = document.getElementById('detail-showless');
+
+    likeBtn.textContent = reaction === 'like' ? '👍 LIKED' : '👍 LIKE';
+    likeBtn.classList.toggle('active', reaction === 'like');
+
+    dislikeBtn.textContent = reaction === 'dislike' ? '👎 DISLIKED' : '👎 DISLIKE';
+    dislikeBtn.classList.toggle('active', reaction === 'dislike');
+
+    const src = item.sourceDetail || item.source;
+    const isMuted = Store.getShowLess().includes(src);
+    showLessBtn.textContent = isMuted ? '📉 MUTED' : '📉 SHOW LESS';
+    showLessBtn.classList.toggle('active', isMuted);
+  }
+
+  /* ═══ COMMENTS / DISCUSSION ═════════════════════ */
+  async function loadComments(item) {
+    const listEl = document.getElementById('discussion-list');
+    const loadingEl = document.getElementById('discussion-loading');
+    const emptyEl = document.getElementById('discussion-empty');
+
+    listEl.innerHTML = '';
+    emptyEl.classList.add('hidden');
+    loadingEl.classList.remove('hidden');
+
+    try {
+      let url = '';
+
+      if (item.source === 'reddit' && item.permalink) {
+        // Extract path from full permalink URL
+        const path = item.permalink.replace('https://reddit.com', '').replace('https://www.reddit.com', '');
+        url = `/api/comments?source=reddit&permalink=${encodeURIComponent(path)}`;
+      } else if (item.source === 'hackernews' && item.id) {
+        const hnId = item.id.replace('hn_', '');
+        url = `/api/comments?source=hackernews&id=${hnId}`;
+      } else {
+        loadingEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      const data = await fetch(url).then(r => r.json());
+      loadingEl.classList.add('hidden');
+
+      if (!data.comments || data.comments.length === 0) {
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      listEl.innerHTML = data.comments.map(c => renderComment(c)).join('');
+    } catch (err) {
+      console.error('Comments error:', err);
+      loadingEl.classList.add('hidden');
+      emptyEl.textContent = 'Failed to load discussion.';
+      emptyEl.classList.remove('hidden');
+    }
+  }
+
+  function renderComment(c) {
+    const replies = (c.replies || []).map(r =>
+      `<div class="comment reply">
+        <div class="comment-header">
+          <span class="comment-author">${esc(r.author)}</span>
+          <span class="comment-score">▲ ${r.score || 0}</span>
+          <span class="comment-time">${timeAgo(r.time)}</span>
+        </div>
+        <div class="comment-text">${esc(r.text)}</div>
+      </div>`
+    ).join('');
+
+    return `<div class="comment">
+      <div class="comment-header">
+        <span class="comment-author">${esc(c.author)}</span>
+        <span class="comment-score">▲ ${c.score || 0}</span>
+        <span class="comment-time">${timeAgo(c.time)}</span>
+      </div>
+      <div class="comment-text">${esc(c.text)}</div>
+      ${replies ? `<div class="comment-replies">${replies}</div>` : ''}
+    </div>`;
   }
 
   function hideDetail() {

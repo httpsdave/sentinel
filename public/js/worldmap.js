@@ -1,92 +1,13 @@
 /* ═══════════════════════════════════════════════════
-   WORLD MAP — Canvas globe with news geo-markers
-   Simplified continent polygons + city geocoding
+   WORLD MAP — Leaflet interactive map with dark tiles
+   Real geography, zoom/pan, country names, timezone lines
+   CartoDB Dark Matter tiles for terminal aesthetic
    ═══════════════════════════════════════════════════ */
 const WorldMap = (() => {
-  let canvas, ctx;
+  let map = null;
+  let markerLayer = null;
   let items = [];
-  let markers = [];          // { item, lng, lat, _x, _y }
-  let hoveredItem = null;
-  let animId = null;
-  let pulse = 0;
-  let dpr = 1, W = 0, H = 0;
-
-  /* ── Continent Outlines [lng, lat] ──────────────── */
-  const LAND = [
-    // North America
-    [[-140,60],[-130,66],[-125,72],[-100,73],[-85,73],[-80,68],[-65,60],[-58,48],
-     [-66,44],[-70,43],[-75,35],[-82,29],[-88,30],[-96,26],[-105,20],[-100,16],
-     [-92,15],[-88,14],[-83,8],[-78,8],[-76,18],[-81,22],[-82,26],[-75,30],
-     [-72,35],[-66,44],[-60,47],[-56,52],[-58,55],[-65,58],[-78,62],[-93,65],
-     [-108,70],[-125,73],[-140,68],[-140,60]],
-    // South America
-    [[-82,9],[-77,7],[-72,12],[-64,10],[-58,5],[-52,3],[-44,0],[-35,-4],
-     [-35,-12],[-38,-16],[-41,-22],[-48,-28],[-50,-30],[-53,-33],[-56,-36],
-     [-58,-40],[-65,-43],[-67,-47],[-68,-50],[-70,-54],[-73,-50],[-75,-45],
-     [-73,-35],[-71,-30],[-70,-18],[-75,-14],[-77,-8],[-80,-3],[-80,2],[-77,6],[-82,9]],
-    // Europe
-    [[-10,36],[-9,38],[-9,43],[-4,44],[-2,47],[0,51],[-5,54],[-6,58],[4,58],
-     [5,62],[10,64],[16,68],[20,70],[26,71],[32,70],[33,65],[30,58],[25,55],
-     [23,50],[28,46],[26,41],[22,38],[15,38],[12,44],[8,46],[5,44],[3,43],
-     [1,38],[-3,36],[-10,36]],
-    // Africa
-    [[-15,28],[-17,21],[-17,15],[-15,10],[-8,5],[3,5],[8,4],[10,1],[9,-3],
-     [12,-6],[15,-11],[18,-16],[22,-22],[26,-26],[29,-31],[31,-34],[34,-34],
-     [37,-26],[40,-16],[42,-10],[44,-4],[50,-12],[51,0],[48,5],[45,12],
-     [43,12],[40,15],[36,33],[33,36],[28,35],[20,35],[10,37],[5,36],
-     [0,35],[-5,35],[-10,33],[-15,28]],
-    // Asia
-    [[28,42],[30,45],[36,42],[40,40],[44,42],[48,40],[52,38],[55,42],[58,45],
-     [60,50],[63,55],[68,58],[72,60],[80,62],[88,58],[95,55],[105,55],[115,52],
-     [122,48],[128,42],[130,38],[128,33],[122,25],[118,22],[110,20],[105,15],
-     [100,12],[98,8],[95,6],[88,20],[82,22],[78,15],[76,8],[72,18],[68,24],
-     [65,26],[60,30],[55,33],[50,30],[48,29],[44,25],[42,14],[36,14],[34,30],
-     [30,37],[28,42]],
-    // India subcontinent
-    [[68,24],[72,18],[76,8],[80,8],[85,15],[88,20],[90,22],[88,24],[82,22],
-     [78,28],[72,28],[68,24]],
-    // Australia
-    [[115,-14],[120,-14],[128,-15],[133,-13],[137,-12],[142,-14],[146,-16],
-     [150,-21],[153,-25],[153,-29],[150,-34],[148,-38],[143,-38],[138,-36],
-     [132,-33],[128,-30],[125,-28],[120,-25],[116,-21],[114,-26],[115,-31],
-     [115,-22],[113,-17],[115,-14]],
-    // Greenland
-    [[-55,60],[-50,62],[-45,65],[-40,69],[-35,73],[-25,76],[-20,78],[-19,80],
-     [-26,82],[-36,83],[-46,82],[-51,80],[-55,78],[-55,75],[-53,72],[-55,68],[-55,60]],
-    // UK + Ireland
-    [[-10,50],[-6,50],[-5,52],[-3,54],[-5,56],[-3,58],[0,59],[0,61],[-3,59],
-     [-6,57],[-8,54],[-10,52],[-10,50]],
-    // Japan
-    [[130,31],[132,33],[134,35],[137,37],[140,40],[142,43],[145,45],
-     [144,43],[141,40],[138,36],[136,34],[133,32],[130,31]],
-    // New Zealand
-    [[166,-35],[168,-37],[173,-42],[175,-44],[174,-46],[172,-45],[169,-43],
-     [167,-38],[166,-35]],
-    // Indonesia (rough)
-    [[96,5],[100,0],[105,-5],[110,-7],[115,-8],[120,-8],[125,-5],[130,-3],
-     [135,-4],[140,-6],[141,-8],[138,-7],[133,-5],[128,-8],[122,-10],[116,-9],
-     [110,-8],[106,-6],[100,-2],[96,2],[96,5]],
-    // Madagascar
-    [[44,-12],[48,-15],[50,-19],[50,-23],[48,-25],[45,-24],[43,-19],[43,-14],[44,-12]],
-    // Scandinavia (peninsula)
-    [[5,58],[8,58],[12,60],[14,64],[16,68],[20,70],[26,71],[28,69],[20,65],
-     [18,63],[15,60],[10,58],[5,58]],
-    // Arabian Peninsula
-    [[36,14],[40,15],[42,14],[44,12],[48,16],[52,18],[55,22],[56,25],[52,23],
-     [48,29],[44,25],[42,14],[36,14]],
-    // Sri Lanka
-    [[80,6],[81,7],[82,8],[82,6],[80,6]],
-    // Taiwan
-    [[120,22],[121,25],[122,25],[121,22],[120,22]],
-    // Philippines (rough)
-    [[117,7],[119,10],[121,14],[122,18],[122,14],[121,10],[119,7],[117,7]],
-    // Korea
-    [[126,34],[127,35],[129,36],[129,38],[128,40],[126,38],[126,34]],
-    // Iceland
-    [[-24,64],[-22,65],[-18,66],[-14,65],[-14,64],[-18,63],[-22,63],[-24,64]],
-    // Cuba
-    [[-85,22],[-82,23],[-78,22],[-75,20],[-78,20],[-82,21],[-85,22]]
-  ];
+  let container = null;
 
   /* ── City Geocoding Database ────────────────────── */
   const GEO = {
@@ -110,7 +31,6 @@ const WorldMap = (() => {
     'buenos aires':[-58.4,-34.6],'mexico city':[-99.1,19.4],'bogota':[-74.1,4.6],
     'lima':[-77,-12],'santiago':[-70.7,-33.4],'toronto':[-79.4,43.7],'vancouver':[-123.1,49.3],
     'montreal':[-73.6,45.5],
-    // Country-level fallbacks
     'ukraine':[32,49],'kyiv':[30.5,50.5],'russia':[90,62],'china':[105,35],
     'japan':[138,36],'india':[78,22],'brazil':[-52,-10],'australia':[134,-25],
     'canada':[-106,56],'germany':[10,51],'france':[2,46],'uk':[-2,54],
@@ -135,233 +55,161 @@ const WorldMap = (() => {
     'scotland':[-4,57],'wales':[-3.5,52],'northern ireland':[-6,54.6],
     'crimea':[34,45],'donbas':[38,48],'kremlin':[37.6,55.8],
     'pentagon':[-77,38.9],'wall street':[-74,40.7],'silicon valley':[-122,37.4],
-    'hollywood':[-118.3,34.1],'brussels':[4.4,50.8],'geneva':[6.1,46.2],
+    'hollywood':[-118.3,34.1],'geneva':[6.1,46.2],
     'the hague':[4.3,52.1]
   };
 
   /* ── Init ────────────────────────────────────────── */
   function init(el) {
-    canvas = el;
-    ctx = canvas.getContext('2d');
-    resize();
-    window.addEventListener('resize', resize);
-    canvas.addEventListener('mousemove', onMove);
-    canvas.addEventListener('mouseleave', onLeave);
-    canvas.addEventListener('click', onClick);
-    canvas.addEventListener('touchstart', onTouch, { passive: false });
-    startAnim();
+    container = el;
+
+    map = L.map(el, {
+      center: [25, 10],
+      zoom: 3,
+      minZoom: 2,
+      maxZoom: 14,
+      zoomControl: true,
+      attributionControl: false,
+      worldCopyJump: false,
+      maxBounds: [[-85, -180], [85, 180]],
+      maxBoundsViscosity: 1.0
+    });
+
+    // CartoDB Dark Matter — dark tiles with city/country labels
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 19,
+      noWrap: true,
+      bounds: [[-90, -180], [90, 180]],
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
+    }).addTo(map);
+
+    // Attribution control
+    L.control.attribution({ prefix: false, position: 'bottomright' }).addTo(map);
+
+    // Timezone lines overlay
+    drawTimezoneLines();
+
+    // Marker layer
+    markerLayer = L.layerGroup().addTo(map);
+
+    // Zoom control position
+    map.zoomControl.setPosition('topright');
+
+    // Legend
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'map-legend');
+      div.innerHTML = '<span class="legend-dot"></span> NEWS SIGNAL &nbsp; <span class="legend-line"></span> TIMEZONE';
+      return div;
+    };
+    legend.addTo(map);
   }
 
-  function resize() {
-    dpr = window.devicePixelRatio || 1;
-    const r = canvas.parentElement.getBoundingClientRect();
-    W = r.width; H = r.height;
-    canvas.width  = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width  = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
+  /* ── Timezone Lines ──────────────────────────────── */
+  function drawTimezoneLines() {
+    const tzGroup = L.layerGroup().addTo(map);
 
-  /* ── Projection ──────────────────────────────────── */
-  function proj(lng, lat) {
-    const pad = 14;
-    const x = pad + ((lng + 180) / 360) * (W - pad * 2);
-    const y = pad + ((90 - lat) / 180) * (H - pad * 2);
-    return [x, y];
+    for (let offset = -180; offset <= 165; offset += 15) {
+      L.polyline(
+        [[-80, offset], [80, offset]],
+        { color: '#00ff41', weight: 0.4, opacity: 0.15, dashArray: '4,8', interactive: false }
+      ).addTo(tzGroup);
+
+      const hours = offset / 15;
+      const label = hours === 0 ? 'UTC' : (hours > 0 ? `+${hours}` : `${hours}`);
+      const icon = L.divIcon({
+        className: 'tz-label',
+        html: `<span>${label}</span>`,
+        iconSize: [36, 14],
+        iconAnchor: [18, 14]
+      });
+      L.marker([78, offset], { icon, interactive: false }).addTo(tzGroup);
+    }
   }
 
   /* ── Data ────────────────────────────────────────── */
   function setItems(arr) {
     items = arr;
-    geocode();
+    plotMarkers();
   }
 
-  function geocode() {
-    markers = [];
+  function plotMarkers() {
+    if (!markerLayer) return;
+    markerLayer.clearLayers();
     const used = new Set();
+    let placedCount = 0;
+
     items.forEach(item => {
       const text = (item.title + ' ' + (item.snippet || '')).toLowerCase();
-      // Check longer names first for better matching
       const sortedNames = Object.keys(GEO).sort((a, b) => b.length - a.length);
+
       for (const name of sortedNames) {
-        // Word boundary check - the name should be a standalone word
         const idx = text.indexOf(name);
         if (idx === -1) continue;
-        // Ensure it's a word boundary (not middle of another word)
         const before = idx > 0 ? text[idx - 1] : ' ';
         const after = idx + name.length < text.length ? text[idx + name.length] : ' ';
         if (/[a-z]/.test(before) || /[a-z]/.test(after)) continue;
 
-        const [lng, lat] = GEO[name];
-        // Jitter to avoid overlap
         const key = item.id;
         if (used.has(key)) break;
         used.add(key);
-        const jlng = lng + (Math.random() - 0.5) * 4;
-        const jlat = lat + (Math.random() - 0.5) * 3;
-        markers.push({ item, lng: jlng, lat: jlat, _x: 0, _y: 0 });
+
+        const [lng, lat] = GEO[name];
+        const jlng = lng + (Math.random() - 0.5) * 2;
+        const jlat = lat + (Math.random() - 0.5) * 1.5;
+
+        const size = Math.min(14, 4 + Math.log2((item.score || 1) + 1));
+
+        const marker = L.circleMarker([jlat, jlng], {
+          radius: size,
+          fillColor: '#00ff41',
+          fillOpacity: 0.4,
+          color: '#00ff41',
+          weight: 1.2,
+          opacity: 0.7
+        });
+
+        const title = escHtml(item.title);
+        const src = escHtml(item.sourceDetail || item.source);
+        marker.bindPopup(
+          `<div class="map-popup">
+            <div class="map-popup-title">${title}</div>
+            <div class="map-popup-meta">
+              <span>${src}</span>
+              <span>▲ ${item.score || 0} · 💬 ${item.comments || 0}</span>
+            </div>
+            <div class="map-popup-action">Click to view details ↗</div>
+          </div>`,
+          { className: 'sentinel-popup', maxWidth: 300, closeButton: false, autoPan: true }
+        );
+
+        marker.on('mouseover', function () { this.openPopup(); });
+        marker.on('mouseout', function () { this.closePopup(); });
+        marker.on('click', () => { App.showDetail(item); });
+
+        markerLayer.addLayer(marker);
+        placedCount++;
         break;
       }
     });
-    document.getElementById('map-count').textContent = markers.length + ' locations tracked';
+
+    const countEl = document.getElementById('map-count');
+    if (countEl) countEl.textContent = placedCount + ' locations tracked';
   }
 
-  /* ── Animation ───────────────────────────────────── */
-  function startAnim() {
-    if (animId) return;
-    const loop = () => { pulse += 0.025; draw(); animId = requestAnimationFrame(loop); };
-    loop();
+  function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
   }
 
-  /* ── Draw ────────────────────────────────────────── */
-  function draw() {
-    if (!W || !H) return;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, W, H);
-
-    // Grid
-    ctx.strokeStyle = 'rgba(0,255,65,0.04)';
-    ctx.lineWidth = 0.5;
-    for (let lng = -180; lng <= 180; lng += 30) {
-      const [x] = proj(lng, 0);
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    }
-    for (let lat = -60; lat <= 90; lat += 30) {
-      const [, y] = proj(0, lat);
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    }
-
-    // Equator
-    ctx.strokeStyle = 'rgba(0,255,65,0.1)';
-    ctx.setLineDash([3, 4]);
-    const [, eqY] = proj(0, 0);
-    ctx.beginPath(); ctx.moveTo(0, eqY); ctx.lineTo(W, eqY); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Prime meridian
-    const [pmX] = proj(0, 0);
-    ctx.strokeStyle = 'rgba(0,255,65,0.06)';
-    ctx.setLineDash([3, 4]);
-    ctx.beginPath(); ctx.moveTo(pmX, 0); ctx.lineTo(pmX, H); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Continents
-    LAND.forEach(poly => {
-      ctx.beginPath();
-      poly.forEach(([lng, lat], i) => {
-        const [x, y] = proj(lng, lat);
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      });
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(0,255,65,0.06)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,255,65,0.35)';
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    });
-
-    // Markers
-    markers.forEach((m, i) => {
-      const [x, y] = proj(m.lng, m.lat);
-      m._x = x; m._y = y;
-      const p = Math.sin(pulse + i * 0.4) * 0.3 + 0.7;
-
-      // Outer glow
-      const g = ctx.createRadialGradient(x, y, 0, x, y, 14);
-      g.addColorStop(0, `rgba(0,255,65,${0.35 * p})`);
-      g.addColorStop(1, 'rgba(0,255,65,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, 14, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Core dot
-      ctx.fillStyle = `rgba(0,255,65,${0.75 * p})`;
-      ctx.beginPath();
-      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Hovered highlight
-      if (hoveredItem && hoveredItem.id === m.item.id) {
-        ctx.strokeStyle = '#00ff41';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(x, y, 9, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(0,255,65,0.8)';
-        ctx.font = '9px Courier New';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'bottom';
-        const lbl = m.item.title.length > 50 ? m.item.title.slice(0, 47) + '...' : m.item.title;
-        ctx.fillText(lbl, x + 12, y - 3);
-      }
-    });
-
-    // Legend
-    ctx.fillStyle = 'rgba(0,255,65,0.15)';
-    ctx.font = '8px Courier New';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('SENTINEL GLOBAL INTEL MAP', W - 10, H - 6);
-  }
-
-  /* ── Hit Testing ─────────────────────────────────── */
-  function markerAt(mx, my) {
-    for (let i = markers.length - 1; i >= 0; i--) {
-      const m = markers[i];
-      const dx = mx - m._x, dy = my - m._y;
-      if (dx * dx + dy * dy < 256) return m;     // 16px radius
-    }
-    return null;
-  }
-
-  function onMove(e) {
-    const r = canvas.getBoundingClientRect();
-    const mx = e.clientX - r.left, my = e.clientY - r.top;
-    const hit = markerAt(mx, my);
-    hoveredItem = hit ? hit.item : null;
-    canvas.style.cursor = hit ? 'pointer' : 'crosshair';
-
-    const tt = document.getElementById('map-tooltip');
-    if (hit) {
-      tt.innerHTML = `<div>${hit.item.title}</div>
-        <div class="tt-source">${hit.item.sourceDetail || hit.item.source}</div>
-        <div class="tt-score">▲ ${hit.item.score || 0} · 💬 ${hit.item.comments || 0}</div>`;
-      tt.classList.remove('hidden');
-      let tx = mx + 14, ty = my - 10;
-      if (tx + 280 > W) tx = mx - 290;
-      if (ty + 60 > H) ty = my - 60;
-      tt.style.left = tx + 'px';
-      tt.style.top  = ty + 'px';
-    } else {
-      tt.classList.add('hidden');
-    }
-  }
-
-  function onLeave() {
-    hoveredItem = null;
-    document.getElementById('map-tooltip').classList.add('hidden');
-  }
-
-  function onClick(e) {
-    const r = canvas.getBoundingClientRect();
-    const hit = markerAt(e.clientX - r.left, e.clientY - r.top);
-    if (hit) App.showDetail(hit.item);
-  }
-
-  function onTouch(e) {
-    e.preventDefault();
-    const t = e.touches[0], r = canvas.getBoundingClientRect();
-    const hit = markerAt(t.clientX - r.left, t.clientY - r.top);
-    if (hit) App.showDetail(hit.item);
+  function resize() {
+    if (map) setTimeout(() => map.invalidateSize(), 120);
   }
 
   function destroy() {
-    if (animId) cancelAnimationFrame(animId);
-    window.removeEventListener('resize', resize);
+    if (map) { map.remove(); map = null; }
   }
 
   return { init, setItems, resize, destroy };
