@@ -57,6 +57,223 @@ html, body {
 a { color: var(--green); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* ═══════════════════════════════════════════════════════════
+   LANDING PAGE
+   ═══════════════════════════════════════════════════════════ */
+.landing {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.landing.dismissed {
+  animation: landingFadeOut 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes landingFadeOut {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* Background radar canvas */
+.landing-radar {
+  position: absolute;
+  left: -10%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 55%;
+  height: auto;
+  aspect-ratio: 1;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Background world map SVG */
+.landing-map {
+  position: absolute;
+  width: 80%;
+  max-width: 900px;
+  height: auto;
+  opacity: 0.25;
+  pointer-events: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 65, 0.15));
+}
+
+/* Content overlay */
+.landing-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  padding: 40px 60px;
+  gap: 60px;
+}
+
+.landing-left {
+  flex: 1;
+  max-width: 620px;
+}
+
+.landing-logo {
+  font-size: 48px;
+  font-weight: bold;
+  color: var(--green);
+  letter-spacing: 8px;
+  text-shadow: 0 0 20px var(--green-glow), 0 0 60px rgba(0, 255, 65, 0.15);
+  margin-bottom: 32px;
+  animation: logoIn 0.8s ease-out both;
+}
+
+@keyframes logoIn {
+  from { opacity: 0; transform: translateY(-20px); letter-spacing: 20px; }
+  to   { opacity: 1; transform: translateY(0); letter-spacing: 8px; }
+}
+
+.landing-tagline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.landing-line {
+  font-size: 20px;
+  color: var(--green-dim);
+  line-height: 1.6;
+  opacity: 0;
+  animation: lineIn 0.6s ease-out forwards;
+}
+
+@keyframes lineIn {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.landing-sub {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  opacity: 0;
+  animation: lineIn 0.8s ease-out forwards;
+}
+
+.landing-accent {
+  color: var(--green);
+  text-shadow: 0 0 6px var(--green-glow);
+}
+
+/* Right side — CTA */
+.landing-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  animation: ctaIn 1s ease-out 2.2s both;
+}
+
+@keyframes ctaIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.landing-cta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  padding: 20px 40px;
+  font: bold 20px/1 var(--font);
+  letter-spacing: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s;
+  text-shadow: 0 0 8px var(--green-glow);
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.1), inset 0 0 15px rgba(0, 255, 65, 0.05);
+}
+
+.landing-cta:hover {
+  background: var(--green);
+  color: var(--bg);
+  text-shadow: none;
+  box-shadow: 0 0 30px var(--green-glow), 0 0 60px rgba(0, 255, 65, 0.2);
+  transform: scale(1.03);
+}
+
+.landing-cta:hover .cta-icon { animation: radarPulse 0.6s ease-in-out infinite alternate; }
+
+@keyframes radarPulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.25); }
+}
+
+.cta-icon { font-size: 28px; transition: transform 0.2s; }
+.cta-arrow { font-size: 22px; opacity: 0.6; transition: opacity 0.2s; }
+.landing-cta:hover .cta-arrow { opacity: 1; }
+
+.landing-hint {
+  font-size: 12px;
+  color: var(--text-xmuted);
+  letter-spacing: 2px;
+  animation: blink 2s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Landing hidden after enter */
+.landing.hidden { display: none !important; }
+
+/* Hide app chrome while landing is visible */
+.landing-active #header,
+.landing-active #filter-bar,
+.landing-active #main,
+.landing-active #status-bar,
+.landing-active #mobile-nav { display: none !important; }
+
+/* ── Responsive landing ── */
+@media (max-width: 900px) {
+  .landing-content {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 24px;
+    gap: 40px;
+    justify-content: center;
+  }
+  .landing-left { max-width: 100%; }
+  .landing-logo { font-size: 32px; letter-spacing: 5px; margin-bottom: 24px; }
+  .landing-line { font-size: 17px; }
+  .landing-sub { font-size: 13px; }
+  .landing-tagline { align-items: center; }
+  .landing-cta { padding: 16px 32px; font-size: 17px; }
+  .landing-radar { left: -30%; width: 80%; opacity: 0.08; }
+}
+
+@media (max-width: 480px) {
+  .landing-logo { font-size: 24px; letter-spacing: 4px; }
+  .landing-line { font-size: 15px; }
+  .landing-sub { font-size: 12px; }
+  .landing-cta { padding: 14px 24px; font-size: 15px; gap: 10px; }
+  .cta-icon { font-size: 22px; }
+}
+
 /* ── CRT SCANLINE OVERLAY ──────────────────────────── */
 #crt-overlay {
   position: fixed; inset: 0;

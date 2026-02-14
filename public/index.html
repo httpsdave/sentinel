@@ -13,6 +13,67 @@
   <!-- CRT Scanline Overlay -->
   <div id="crt-overlay"></div>
 
+  <!-- ═══ LANDING PAGE ═══ -->
+  <div id="landing" class="landing">
+    <canvas id="landing-radar" class="landing-radar"></canvas>
+    <svg id="landing-map" class="landing-map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+      <!-- Simplified world continents as green wireframe paths -->
+      <g stroke="var(--green-dark)" stroke-width="0.7" fill="none" opacity="0.35">
+        <!-- North America -->
+        <path d="M150,80 L180,70 L220,65 L250,80 L260,100 L255,130 L240,150 L230,160 L210,170 L200,190 L190,200 L180,210 L170,195 L165,180 L155,165 L140,160 L130,150 L120,140 L115,125 L120,105 L135,90 Z"/>
+        <path d="M200,190 L210,200 L225,210 L220,225 L210,230 L200,220 L195,210 Z"/>
+        <!-- South America -->
+        <path d="M220,240 L235,235 L250,240 L260,255 L270,275 L275,300 L270,330 L260,355 L250,375 L240,385 L235,380 L230,360 L225,335 L220,310 L215,285 L210,265 L215,250 Z"/>
+        <!-- Europe -->
+        <path d="M440,75 L460,70 L480,72 L500,80 L510,90 L505,100 L495,110 L485,115 L470,118 L460,115 L450,105 L445,95 L440,85 Z"/>
+        <!-- Africa -->
+        <path d="M450,140 L470,135 L490,140 L505,155 L510,175 L515,200 L510,230 L500,255 L490,275 L475,285 L460,280 L450,265 L445,245 L440,220 L435,195 L440,170 L445,155 Z"/>
+        <!-- Asia -->
+        <path d="M520,60 L560,50 L600,45 L650,50 L700,60 L730,75 L750,90 L760,110 L755,130 L740,145 L720,150 L700,148 L680,140 L660,135 L640,130 L620,125 L600,120 L580,110 L560,100 L540,90 L530,80 Z"/>
+        <path d="M560,100 L570,120 L565,140 L555,155 L540,160 L530,150 L525,135 L530,120 L540,110 Z"/>
+        <!-- Australia -->
+        <path d="M720,260 L750,255 L780,260 L800,275 L805,295 L795,310 L775,315 L755,310 L740,300 L730,285 L725,270 Z"/>
+        <!-- Scattered Islands / Detail dots -->
+        <circle cx="680" cy="185" r="3"/>
+        <circle cx="700" cy="200" r="2"/>
+        <circle cx="760" cy="170" r="4"/>
+      </g>
+      <!-- Glowing ping dots on key locations -->
+      <g class="landing-pings">
+        <circle cx="200" cy="140" r="2.5" fill="var(--green)" opacity="0"><animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="0s"/><animate attributeName="r" values="2;5;2" dur="3s" repeatCount="indefinite" begin="0s"/></circle>
+        <circle cx="470" cy="100" r="2.5" fill="var(--green)" opacity="0"><animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="1s"/><animate attributeName="r" values="2;5;2" dur="3s" repeatCount="indefinite" begin="1s"/></circle>
+        <circle cx="640" cy="80" r="2.5" fill="var(--green)" opacity="0"><animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="0.5s"/><animate attributeName="r" values="2;5;2" dur="3s" repeatCount="indefinite" begin="0.5s"/></circle>
+        <circle cx="480" cy="200" r="2.5" fill="var(--green)" opacity="0"><animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="1.8s"/><animate attributeName="r" values="2;5;2" dur="3s" repeatCount="indefinite" begin="1.8s"/></circle>
+        <circle cx="760" cy="280" r="2.5" fill="var(--green)" opacity="0"><animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="2.3s"/><animate attributeName="r" values="2;5;2" dur="3s" repeatCount="indefinite" begin="2.3s"/></circle>
+        <circle cx="260" cy="300" r="2.5" fill="var(--green)" opacity="0"><animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" begin="0.8s"/><animate attributeName="r" values="2;5;2" dur="3s" repeatCount="indefinite" begin="0.8s"/></circle>
+      </g>
+    </svg>
+
+    <div class="landing-content">
+      <div class="landing-left">
+        <div class="landing-logo">▓ SENTINEL</div>
+        <div class="landing-tagline">
+          <span class="landing-line" style="animation-delay: 0.3s">The truth doesn't wait for permission.</span>
+          <span class="landing-line" style="animation-delay: 0.8s">It doesn't care who's comfortable.</span>
+          <span class="landing-line" style="animation-delay: 1.3s">It just needs someone paying attention.</span>
+        </div>
+        <p class="landing-sub" style="animation-delay: 2s">
+          Real-time intelligence from every corner of the open web.<br>
+          No algorithm decides what you see. No paywall decides who knows.<br>
+          <span class="landing-accent">Information is a right, not a privilege.</span>
+        </p>
+      </div>
+      <div class="landing-right">
+        <button id="landing-enter" class="landing-cta">
+          <span class="cta-icon">◉</span>
+          <span class="cta-text">ENTER SENTINEL</span>
+          <span class="cta-arrow">▸</span>
+        </button>
+        <div class="landing-hint">press ENTER or click to begin</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ HEADER ═══ -->
   <header id="header">
     <div class="header-left">
@@ -307,6 +368,126 @@
 
   <!-- ═══ SCRIPTS ═══ -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Landing page logic (runs before main app) -->
+  <script>
+  (function() {
+    const SEEN_KEY = 'sentinel_seen_landing';
+    const landing = document.getElementById('landing');
+    const seen = localStorage.getItem(SEEN_KEY);
+
+    if (seen) {
+      // Returning user — skip landing entirely
+      landing.classList.add('hidden');
+      document.body.classList.remove('landing-active');
+    } else {
+      document.body.classList.add('landing-active');
+      initLandingRadar();
+    }
+
+    function enterApp() {
+      localStorage.setItem(SEEN_KEY, '1');
+      landing.classList.add('dismissed');
+      document.body.classList.remove('landing-active');
+      setTimeout(() => landing.classList.add('hidden'), 650);
+    }
+
+    document.getElementById('landing-enter')?.addEventListener('click', enterApp);
+    document.addEventListener('keydown', function onKey(e) {
+      if (!landing.classList.contains('hidden') && !landing.classList.contains('dismissed')) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          enterApp();
+          document.removeEventListener('keydown', onKey);
+        }
+      }
+    });
+
+    /* Mini radar canvas animation for the landing background */
+    function initLandingRadar() {
+      const c = document.getElementById('landing-radar');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      const size = 600;
+      c.width = size; c.height = size;
+      let angle = 0;
+
+      function draw() {
+        if (landing.classList.contains('hidden')) return;
+        const cx = size / 2, cy = size / 2, r = size * 0.46;
+
+        ctx.clearRect(0, 0, size, size);
+
+        // Rings
+        ctx.strokeStyle = 'rgba(0,255,65,0.12)';
+        ctx.lineWidth = 0.8;
+        for (let i = 1; i <= 4; i++) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * (i / 4), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Cross hairs
+        ctx.strokeStyle = 'rgba(0,255,65,0.07)';
+        ctx.beginPath();
+        ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
+        ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
+        ctx.stroke();
+
+        // Sweep gradient
+        const grad = ctx.createConicalGradient
+          ? null // fallback below
+          : null;
+
+        // Sweep arc (trailing glow)
+        for (let i = 0; i < 30; i++) {
+          const a = angle - (i * 0.02);
+          const alpha = (1 - i / 30) * 0.35;
+          ctx.strokeStyle = `rgba(0,255,65,${alpha})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+          ctx.stroke();
+        }
+
+        // Sweep line (bright)
+        ctx.strokeStyle = 'rgba(0,255,65,0.8)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+        ctx.stroke();
+
+        // Center dot
+        ctx.fillStyle = 'rgba(0,255,65,0.5)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Some fake blips
+        const blips = [
+          { a: 0.8, d: 0.3 }, { a: 2.1, d: 0.6 }, { a: 3.5, d: 0.45 },
+          { a: 4.8, d: 0.75 }, { a: 5.5, d: 0.2 }, { a: 1.2, d: 0.85 }
+        ];
+        blips.forEach(b => {
+          const diff = ((angle - b.a) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+          const glow = diff < 0.8 ? (1 - diff / 0.8) * 0.7 : 0.15;
+          ctx.fillStyle = `rgba(0,255,65,${glow})`;
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(b.a) * r * b.d, cy + Math.sin(b.a) * r * b.d, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        angle += 0.008;
+        if (angle > Math.PI * 2) angle -= Math.PI * 2;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+  })();
+  </script>
+
   <script src="/js/store.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
