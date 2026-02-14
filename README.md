@@ -54,14 +54,6 @@ Save articles for later from any view. Synced to the cloud when signed in.
 | **RSS Feeds** | No | BBC, CNN, TechCrunch, The Verge, Ars Technica, NY Times |
 | **NewsAPI** | Optional | Free tier at [newsapi.org](https://newsapi.org) for broader headlines |
 
-### 🎨 Terminal Aesthetic
-
-- Pure black & green (`#00ff41`) color scheme
-- CRT scanline overlay (toggleable)
-- Monospace typography throughout
-- Keyboard shortcuts — `R` Radar · `F` Feed · `M` Map · `S` Saved · `/` Search · `Esc` Close
-- Fully responsive — works on mobile and desktop
-
 ---
 
 ## Tech Stack
@@ -75,21 +67,6 @@ Save articles for later from any view. Synced to the cloud when signed in.
 | **APIs** | Reddit JSON, HN Firebase, rss-parser, NewsAPI |
 
 ---
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|:--------:|-------------|
-| `SUPABASE_URL` | For accounts | Your Supabase project URL |
-| `SUPABASE_ANON_KEY` | For accounts | Your Supabase anon/public key |
-| `NEWSAPI_KEY` | No | [newsapi.org](https://newsapi.org/register) key for extra headlines |
-| `PORT` | No | Server port (default: `3000`) |
-
----
-
-## Database Schema
-
-Run the included `supabase-schema.sql` in your Supabase SQL Editor to create the required tables (`user_prefs`, `user_bookmarks`) with Row Level Security policies.
 
 ---
 
