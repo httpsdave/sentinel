@@ -137,6 +137,20 @@ const DEFAULT_FEEDS = [
 ];
 
 /* ═══════════════════════════════════════════════════
+   REGION RSS FEEDS — country-specific news sources
+   ═══════════════════════════════════════════════════ */
+const REGION_FEEDS = {
+  ph: [
+    { url: 'https://www.gmanetwork.com/news/rss/news/nation/feed.xml', name: 'GMA News', cat: 'world' },
+    { url: 'https://www.gmanetwork.com/news/rss/news/world/feed.xml', name: 'GMA World', cat: 'world' },
+    { url: 'https://mb.com.ph/rss', name: 'Manila Bulletin', cat: 'world' },
+    { url: 'https://www.philstar.com/rss/nation', name: 'PhilStar', cat: 'world' },
+    { url: 'https://www.philstar.com/rss/headlines', name: 'PhilStar Headlines', cat: 'world' },
+    { url: 'https://www.manilatimes.net/feed/', name: 'Manila Times', cat: 'world' },
+  ]
+};
+
+/* ═══════════════════════════════════════════════════
    LOCAL NEWS COUNTRY SUBREDDITS — country-specific subs
    ═══════════════════════════════════════════════════ */
 const COUNTRY_SUBS = {
@@ -475,6 +489,91 @@ async function _fetchTheNewsAPI(locale = '', language = 'en', perCat = 5) {
 }
 
 /* ═══════════════════════════════════════════════════
+   GNEWS — gnews.io API for regional headlines
+   Free tier: 100 req/day, 10 articles per request
+   ═══════════════════════════════════════════════════ */
+async function _fetchGNews(country = 'us', category = 'general', limit = 10) {
+  const key = process.env.GNEWS_KEY;
+  if (!key) return [];
+
+  const ck = `gnews:${country}:${category}:${limit}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    const url = `https://gnews.io/api/v4/top-headlines?country=${country}&category=${category}&max=${limit}&apikey=${key}`;
+    const json = await httpGet(url);
+    if (!json || !json.articles) return [];
+
+    const posts = json.articles.map((a, i) => ({
+      id: 'gn_' + (a.id || Date.now() + '_' + i),
+      title: a.title || '',
+      url: a.url || '',
+      permalink: a.url || '',
+      source: 'gnews',
+      sourceDetail: (a.source && a.source.name) || 'GNews',
+      score: 0,
+      comments: 0,
+      thumbnail: a.image || null,
+      created: a.publishedAt ? new Date(a.publishedAt).getTime() : Date.now(),
+      author: '',
+      snippet: (a.description || '').substring(0, 250),
+      domain: (a.source && a.source.name) || '',
+      category: guessCategory('', a.title)
+    }));
+
+    setCache(ck, posts);
+    return posts;
+  } catch (err) {
+    console.error('[GNEWS]', err.message);
+    return [];
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   REGION RSS — fetch country-specific RSS feeds
+   ═══════════════════════════════════════════════════ */
+async function _fetchRegionRSS(country) {
+  if (!country || country === 'auto' || !REGION_FEEDS[country]) return [];
+
+  const ck = `regionrss:${country}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  const feeds = REGION_FEEDS[country];
+  const results = await Promise.allSettled(
+    feeds.map(async (f) => {
+      try {
+        const feed = await rssParser.parseURL(f.url);
+        return (feed.items || []).slice(0, 15).map((item, i) => ({
+          id: 'regrss_' + Buffer.from(item.link || f.url + i).toString('base64').substring(0, 16),
+          title: item.title || '',
+          url: item.link || '',
+          permalink: item.link || '',
+          source: 'rss',
+          sourceDetail: f.name,
+          score: 0,
+          comments: 0,
+          thumbnail: (item.enclosure && item.enclosure.url) || null,
+          created: item.pubDate ? new Date(item.pubDate).getTime() : Date.now(),
+          author: item.creator || item.author || '',
+          snippet: (item.contentSnippet || '').substring(0, 250).replace(/<[^>]+>/g, ''),
+          domain: f.name,
+          category: guessCategory(f.cat, item.title)
+        }));
+      } catch (err) {
+        console.error(`[REGION-RSS] ${f.name}: ${err.message}`);
+        return [];
+      }
+    })
+  );
+
+  const posts = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+  setCache(ck, posts);
+  return posts;
+}
+
+/* ═══════════════════════════════════════════════════
    ROUTE HANDLERS
    ═══════════════════════════════════════════════════ */
 app.get('/api/reddit', async (req, res) => {
@@ -596,13 +695,16 @@ app.get('/api/feed', async (req, res) => {
 
     // Non-Reddit sources in parallel
     const theNewsLocale = (country && country !== 'auto') ? country : '';
-    const [hn, rss, news, guardian, wikinews, thenewsapi] = await Promise.all([
+    const newsCountry = (country && country !== 'auto') ? country : 'us';
+    const [hn, rss, news, guardian, wikinews, thenewsapi, gnews, regionRss] = await Promise.all([
       _fetchHN('top', 30).catch(e => { console.error('[FEED/HN]', e.message); return []; }),
       _fetchRSS().catch(e => { console.error('[FEED/RSS]', e.message); return []; }),
-      _fetchNews('', category || 'general').catch(e => { console.error('[FEED/NEWS]', e.message); return []; }),
+      _fetchNews('', category || 'general', newsCountry).catch(e => { console.error('[FEED/NEWS]', e.message); return []; }),
       _fetchGuardian('', 25).catch(e => { console.error('[FEED/GUARDIAN]', e.message); return []; }),
       _fetchWikinews().catch(e => { console.error('[FEED/WIKINEWS]', e.message); return []; }),
       _fetchTheNewsAPI(theNewsLocale, 'en', 5).catch(e => { console.error('[FEED/THENEWSAPI]', e.message); return []; }),
+      _fetchGNews(newsCountry, 'general', 10).catch(e => { console.error('[FEED/GNEWS]', e.message); return []; }),
+      _fetchRegionRSS(country).catch(e => { console.error('[FEED/REGIONRSS]', e.message); return []; }),
     ]);
 
     // Reddit — accept custom list from frontend, or use defaults
@@ -646,8 +748,16 @@ app.get('/api/feed', async (req, res) => {
       }
     }
 
-    let items = [...hn, ...rss, ...news, ...guardian, ...wikinews, ...thenewsapi, ...redditPosts, ...localPosts];
-    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} TheNewsAPI=${thenewsapi.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
+    const newsIsLocal = newsCountry !== 'us';
+    let items = [...hn, ...rss,
+      ...news.map(i => newsIsLocal ? { ...i, local: true } : i),
+      ...guardian, ...wikinews, ...thenewsapi,
+      ...gnews.map(i => ({ ...i, local: true })),
+      ...regionRss.map(i => ({ ...i, local: true })),
+      ...redditPosts,
+      ...localPosts.map(i => ({ ...i, local: true }))
+    ];
+    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} TheNewsAPI=${thenewsapi.length} GNews=${gnews.length} RegionRSS=${regionRss.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
 
     // De-duplicate
     const seen = new Set();
@@ -671,12 +781,25 @@ app.get('/api/feed', async (req, res) => {
       );
     }
 
+    // Normalize engagement so Reddit doesn't dominate with raw upvotes
+    // Reddit scores can be 1000s; other sources have 0. Cap & normalize.
     const now = Date.now();
-    items.sort((a, b) => {
-      const sa = ((a.score || 0) + (a.comments || 0) * 2 + 1) / Math.pow(((now - (a.created || 0)) / 3600000) + 2, 1.4);
-      const sb = ((b.score || 0) + (b.comments || 0) * 2 + 1) / Math.pow(((now - (b.created || 0)) / 3600000) + 2, 1.4);
-      return sb - sa;
-    });
+    function normalizedScore(item) {
+      const raw = (item.score || 0) + (item.comments || 0) * 2;
+      let engagement;
+      if (item.source === 'reddit') {
+        // Log-scale Reddit engagement to compress 10k upvotes vs 100 upvotes
+        engagement = Math.log10(raw + 1) * 15;
+      } else if (item.source === 'hackernews') {
+        engagement = Math.log10(raw + 1) * 18;
+      } else {
+        // Non-social sources get a solid baseline (equivalent to ~100 reddit score)
+        engagement = 30;
+      }
+      const ageHours = (now - (item.created || 0)) / 3600000;
+      return (engagement + 1) / Math.pow(ageHours + 2, 1.4);
+    }
+    items.sort((a, b) => normalizedScore(b) - normalizedScore(a));
 
     res.json(items.slice(0, 150));
   } catch (e) {
@@ -940,6 +1063,144 @@ app.get('/api/status', (_req, res) => {
     cacheEntries: cache.size,
     uptime: Math.floor(process.uptime())
   });
+});
+
+/* ═══════════════════════════════════════════════════
+   EVENTS / CALENDAR — Nager.Date public holidays API
+   + curated major world events (elections, religious,
+   cultural, sports, political)
+   ═══════════════════════════════════════════════════ */
+
+/* ── Confirmed World Events ─────────────────────── */
+const WORLD_EVENTS = [
+  // ── 2025 ──
+  { date: '2025-01-01', name: 'New Year\'s Day', type: 'holiday', description: 'Worldwide celebration' },
+  { date: '2025-01-29', name: 'Chinese New Year (Year of the Snake)', type: 'cultural', description: 'Lunar New Year celebrated across East & Southeast Asia' },
+  { date: '2025-02-28', name: 'Ramadan Begins (approx.)', type: 'religious', description: 'Islamic holy month of fasting — dates shift yearly by lunar calendar' },
+  { date: '2025-03-30', name: 'Eid al-Fitr (approx.)', type: 'religious', description: 'End of Ramadan celebrations' },
+  { date: '2025-04-13', name: 'Songkran (Thai New Year)', type: 'cultural', description: 'Thai water festival and New Year celebration' },
+  { date: '2025-04-20', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2025-05-12', name: 'Philippines Mid-term Elections', type: 'election', description: 'Senatorial and local elections in the Philippines', country: 'PH' },
+  { date: '2025-06-06', name: 'Eid al-Adha (approx.)', type: 'religious', description: 'Islamic Festival of Sacrifice' },
+  { date: '2025-06-26', name: 'Islamic New Year (approx.)', type: 'religious', description: 'Start of new Islamic calendar year' },
+  { date: '2025-07-01', name: 'Canada Day', type: 'holiday', description: 'Canadian national holiday', country: 'CA' },
+  { date: '2025-07-04', name: 'US Independence Day', type: 'holiday', description: 'American national holiday', country: 'US' },
+  { date: '2025-07-14', name: 'Bastille Day', type: 'holiday', description: 'French national holiday', country: 'FR' },
+  { date: '2025-08-15', name: 'Indian Independence Day', type: 'holiday', description: 'India\'s national day', country: 'IN' },
+  { date: '2025-09-05', name: 'Prophet\'s Birthday (Mawlid) (approx.)', type: 'religious', description: 'Celebration of Prophet Muhammad\'s birth' },
+  { date: '2025-09-22', name: 'Rosh Hashanah (Jewish New Year)', type: 'religious', description: 'Jewish New Year celebration' },
+  { date: '2025-10-01', name: 'Yom Kippur', type: 'religious', description: 'Jewish Day of Atonement' },
+  { date: '2025-10-02', name: 'China National Day', type: 'holiday', description: 'People\'s Republic of China founding anniversary', country: 'CN' },
+  { date: '2025-10-20', name: 'Diwali', type: 'religious', description: 'Hindu festival of lights celebrated across South Asia' },
+  { date: '2025-11-11', name: 'Veterans Day / Remembrance Day', type: 'holiday', description: 'Honoring military veterans (US, UK, CA, AU)' },
+  { date: '2025-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2025-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
+
+  // ── 2026 ──
+  { date: '2026-01-01', name: 'New Year\'s Day', type: 'holiday', description: 'Worldwide celebration' },
+  { date: '2026-02-17', name: 'Chinese New Year (Year of the Horse)', type: 'cultural', description: 'Lunar New Year celebrated across East & Southeast Asia' },
+  { date: '2026-02-17', name: 'Ramadan Begins (approx.)', type: 'religious', description: 'Islamic holy month of fasting' },
+  { date: '2026-03-20', name: 'Eid al-Fitr (approx.)', type: 'religious', description: 'End of Ramadan celebrations' },
+  { date: '2026-04-05', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2026-04-13', name: 'Songkran (Thai New Year)', type: 'cultural', description: 'Thai water festival and New Year celebration' },
+  { date: '2026-05-26', name: 'Eid al-Adha (approx.)', type: 'religious', description: 'Islamic Festival of Sacrifice' },
+  { date: '2026-06-11', name: 'FIFA World Cup 2026 Begins', type: 'sports', description: 'Hosted by US, Canada, and Mexico — biggest sporting event of the year', country: 'US' },
+  { date: '2026-07-19', name: 'FIFA World Cup 2026 Final', type: 'sports', description: 'World Cup Final — MetLife Stadium, New Jersey', country: 'US' },
+  { date: '2026-07-01', name: 'Canada Day', type: 'holiday', description: 'Canadian national holiday', country: 'CA' },
+  { date: '2026-07-04', name: 'US Independence Day', type: 'holiday', description: 'American national holiday', country: 'US' },
+  { date: '2026-07-14', name: 'Bastille Day', type: 'holiday', description: 'French national holiday', country: 'FR' },
+  { date: '2026-08-15', name: 'Indian Independence Day', type: 'holiday', description: 'India\'s national day', country: 'IN' },
+  { date: '2026-09-12', name: 'Rosh Hashanah (Jewish New Year)', type: 'religious', description: 'Jewish New Year celebration' },
+  { date: '2026-09-21', name: 'Yom Kippur', type: 'religious', description: 'Jewish Day of Atonement' },
+  { date: '2026-10-01', name: 'China National Day', type: 'holiday', description: 'People\'s Republic of China founding anniversary', country: 'CN' },
+  { date: '2026-10-09', name: 'Diwali', type: 'religious', description: 'Hindu festival of lights celebrated across South Asia' },
+  { date: '2026-11-03', name: 'US Midterm Elections', type: 'election', description: 'Congressional midterm elections across the United States', country: 'US' },
+  { date: '2026-11-11', name: 'Veterans Day / Remembrance Day', type: 'holiday', description: 'Honoring military veterans (US, UK, CA, AU)' },
+  { date: '2026-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2026-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
+
+  // ── 2027 ──
+  { date: '2027-01-01', name: 'New Year\'s Day', type: 'holiday', description: 'Worldwide celebration' },
+  { date: '2027-02-06', name: 'Chinese New Year (Year of the Goat)', type: 'cultural', description: 'Lunar New Year celebrated across East & Southeast Asia' },
+  { date: '2027-02-07', name: 'Ramadan Begins (approx.)', type: 'religious', description: 'Islamic holy month of fasting' },
+  { date: '2027-03-09', name: 'Eid al-Fitr (approx.)', type: 'religious', description: 'End of Ramadan celebrations' },
+  { date: '2027-03-28', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2027-05-15', name: 'Eid al-Adha (approx.)', type: 'religious', description: 'Islamic Festival of Sacrifice' },
+  { date: '2027-05-09', name: 'Philippines Presidential Election', type: 'election', description: 'National elections for president, VP, senators, and local officials', country: 'PH' },
+  { date: '2027-10-29', name: 'Diwali', type: 'religious', description: 'Hindu festival of lights celebrated across South Asia' },
+  { date: '2027-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2027-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
+
+  // ── Recent / Historical events (2024-2025) ──
+  { date: '2024-11-05', name: 'US Presidential Election 2024', type: 'election', description: 'Donald Trump elected as 47th President of the United States', country: 'US' },
+  { date: '2024-07-26', name: 'Paris 2024 Olympics Opening', type: 'sports', description: 'XXXIII Olympic Games opened in Paris, France', country: 'FR' },
+  { date: '2024-08-11', name: 'Paris 2024 Olympics Closing', type: 'sports', description: 'XXXIII Olympic Games closing ceremony', country: 'FR' },
+  { date: '2025-01-20', name: 'US Presidential Inauguration', type: 'political', description: 'Inauguration of the 47th President of the United States', country: 'US' },
+  { date: '2025-02-12', name: 'Germany Federal Election', type: 'election', description: 'German federal parliamentary election (Bundestag)', country: 'DE' },
+  { date: '2025-05-05', name: 'Canada Federal Election', type: 'election', description: 'Canadian federal general election', country: 'CA' },
+  { date: '2025-07-04', name: 'UK General Election Expected', type: 'election', description: 'Expected date for next UK general election', country: 'GB' },
+];
+
+async function _fetchHolidays(year, countryCode) {
+  const ck = `holidays:${year}:${countryCode}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    const url = `https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`;
+    const data = await httpGet(url);
+    if (!Array.isArray(data)) return [];
+
+    const holidays = data.map(h => ({
+      date: h.date,
+      name: h.name,
+      localName: h.localName,
+      type: h.types?.includes('Public') ? 'holiday' : 'observance',
+      country: h.countryCode,
+      description: h.localName !== h.name ? `${h.localName} — ${h.countryCode}` : h.countryCode
+    }));
+
+    setCache(ck, holidays);
+    return holidays;
+  } catch (err) {
+    console.error('[HOLIDAYS]', err.message);
+    return [];
+  }
+}
+
+app.get('/api/events', async (req, res) => {
+  try {
+    const year = parseInt(req.query.year) || new Date().getFullYear();
+    const month = parseInt(req.query.month) || (new Date().getMonth() + 1);
+    const country = (req.query.country || 'US').toUpperCase();
+
+    // Fetch public holidays from Nager.Date
+    const holidays = await _fetchHolidays(year, country);
+
+    // Filter world events for the requested year
+    const worldFiltered = WORLD_EVENTS.filter(ev => {
+      const d = new Date(ev.date);
+      return d.getFullYear() === year;
+    });
+
+    // Merge — holidays + world events, deduplicate by date+name
+    const allEvents = [...holidays, ...worldFiltered];
+    const seen = new Set();
+    const unique = allEvents.filter(ev => {
+      const key = ev.date + '|' + ev.name.toLowerCase().replace(/[^a-z]/g, '').substring(0, 30);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by date
+    unique.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    res.json({ events: unique, year, month, country });
+  } catch (err) {
+    console.error('[EVENTS]', err.message);
+    res.json({ events: [], year: req.query.year, month: req.query.month });
+  }
 });
 
 /* ═══════════════════════════════════════════════════

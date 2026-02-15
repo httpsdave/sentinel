@@ -56,7 +56,7 @@
       <button class="nav-btn active" data-view="radar" title="Radar view (R)">◉ RADAR</button>
       <button class="nav-btn" data-view="feed" title="Feed view (F)">≡ FEED</button>
       <button class="nav-btn" data-view="map" title="Map view (M)">⊕ MAP</button>
-      <button class="nav-btn" data-view="saved" title="Saved items (S)">★ SAVED</button>
+      <button class="nav-btn" data-view="calendar" title="Events (C)">▣ EVENTS</button>
     </nav>
     <div class="header-right">
       <div class="search-box">
@@ -82,6 +82,14 @@
       <button class="filter-btn" data-category="sports">SPORTS</button>
       <button class="filter-btn" data-category="world">WORLD</button>
       <button class="filter-btn" data-category="community">COMMUNITY</button>
+      <button class="filter-btn filter-local hidden" data-category="local" id="filter-local">📍 LOCAL</button>
+    </div>
+    <div class="sort-control">
+      <select id="sort-mode">
+        <option value="ranked">⚡ Ranked</option>
+        <option value="newest">🕐 Newest</option>
+        <option value="oldest">🕐 Oldest</option>
+      </select>
     </div>
     <div class="source-filters">
       <label class="source-toggle"><input type="checkbox" data-source="reddit" checked> Reddit</label>
@@ -91,6 +99,7 @@
       <label class="source-toggle"><input type="checkbox" data-source="guardian" checked> Guardian</label>
       <label class="source-toggle"><input type="checkbox" data-source="wikinews" checked> WikiNews</label>
       <label class="source-toggle"><input type="checkbox" data-source="thenewsapi" checked> TheNewsAPI</label>
+      <label class="source-toggle"><input type="checkbox" data-source="gnews" checked> GNews</label>
     </div>
   </div>
 
@@ -123,19 +132,9 @@
       </div>
     </div>
 
-    <!-- SAVED VIEW -->
-    <div id="view-saved" class="view">
-      <div id="saved-container">
-        <div id="saved-header">
-          <h2>★ SAVED INTELLIGENCE</h2>
-          <button id="clear-saved" class="btn-sm">PURGE ALL</button>
-        </div>
-        <div id="saved-list"></div>
-        <div id="saved-empty" class="empty-state">
-          <p>[ NO SAVED INTEL ]</p>
-          <p class="hint">Bookmark articles from any view to cache them here.</p>
-        </div>
-      </div>
+    <!-- CALENDAR VIEW -->
+    <div id="view-calendar" class="view">
+      <div id="calendar-container"></div>
     </div>
 
   </main>
@@ -260,13 +259,26 @@
         <p class="hint">Your click patterns shape the ranking algorithm</p>
         <div id="interest-chart"></div>
       </div>
+      <div class="setting-group" id="saved-settings-section">
+        <h3>★ Saved Intelligence</h3>
+        <p class="hint">Your bookmarked articles are stored here.</p>
+        <div id="saved-header-inline" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span id="saved-count-label" style="font-size:13px;color:var(--text-dim);">0 saved items</span>
+          <button id="clear-saved" class="btn-sm">PURGE ALL</button>
+        </div>
+        <div id="saved-list" style="max-height:300px;overflow-y:auto;"></div>
+        <div id="saved-empty" class="empty-state" style="padding:20px 10px;">
+          <p>[ NO SAVED INTEL ]</p>
+          <p class="hint">Bookmark articles from any view to cache them here.</p>
+        </div>
+      </div>
       <div class="setting-group" id="shortcuts">
         <h3>Keyboard Shortcuts</h3>
         <div class="shortcuts-list">
           <div><kbd>R</kbd> Radar view</div>
           <div><kbd>F</kbd> Feed view</div>
           <div><kbd>M</kbd> Map view</div>
-          <div><kbd>S</kbd> Saved view</div>
+          <div><kbd>C</kbd> Events view</div>
           <div><kbd>/</kbd> Focus search</div>
           <div><kbd>Esc</kbd> Close panels</div>
         </div>
@@ -334,9 +346,9 @@
       <span class="mnav-icon">⊕</span>
       <span class="mnav-label">Map</span>
     </button>
-    <button class="mobile-nav-btn" data-view="saved">
-      <span class="mnav-icon">★</span>
-      <span class="mnav-label">Saved</span>
+    <button class="mobile-nav-btn" data-view="calendar">
+      <span class="mnav-icon">▣</span>
+      <span class="mnav-label">Events</span>
     </button>
   </nav>
 
@@ -537,6 +549,7 @@
   <script src="/js/radar.js"></script>
   <script src="/js/worldmap.js"></script>
   <script src="/js/timeline.js"></script>
+  <script src="/js/calendar.js"></script>
   <script src="/js/app.js"></script>
 
 </body>

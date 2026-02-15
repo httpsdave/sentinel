@@ -146,6 +146,76 @@ const Store = (() => {
     { name: 'relationship_advice',   cat: 'community',     on: false, desc: 'Relationship advice' },
     { name: 'TrueOffMyChest',        cat: 'community',     on: false, desc: 'Vent & share stories' },
 
+    // ── Country / Regional News ──
+    { name: 'unitedkingdom',          cat: 'countries', on: false, desc: '🇬🇧 UK community & news' },
+    { name: 'canada',                 cat: 'countries', on: false, desc: '🇨🇦 Canada news & community' },
+    { name: 'australia',              cat: 'countries', on: false, desc: '🇦🇺 Australia news & community' },
+    { name: 'de',                     cat: 'countries', on: false, desc: '🇩🇪 Germany (German-language)' },
+    { name: 'france',                 cat: 'countries', on: false, desc: '🇫🇷 France community & news' },
+    { name: 'india',                  cat: 'countries', on: false, desc: '🇮🇳 India news & discussion' },
+    { name: 'japan',                  cat: 'countries', on: false, desc: '🇯🇵 Japan community & news' },
+    { name: 'brasil',                 cat: 'countries', on: false, desc: '🇧🇷 Brazil (Portuguese)' },
+    { name: 'southafrica',            cat: 'countries', on: false, desc: '🇿🇦 South Africa news' },
+    { name: 'Nigeria',                cat: 'countries', on: false, desc: '🇳🇬 Nigeria community' },
+    { name: 'dubai',                  cat: 'countries', on: false, desc: '🇦🇪 UAE / Dubai community' },
+    { name: 'singapore',              cat: 'countries', on: false, desc: '🇸🇬 Singapore news & community' },
+    { name: 'korea',                  cat: 'countries', on: false, desc: '🇰🇷 South Korea community' },
+    { name: 'mexico',                 cat: 'countries', on: false, desc: '🇲🇽 Mexico community & news' },
+    { name: 'italy',                  cat: 'countries', on: false, desc: '🇮🇹 Italy community' },
+    { name: 'spain',                  cat: 'countries', on: false, desc: '🇪🇸 Spain community' },
+    { name: 'thenetherlands',         cat: 'countries', on: false, desc: '🇳🇱 Netherlands community' },
+    { name: 'sweden',                 cat: 'countries', on: false, desc: '🇸🇪 Sweden community' },
+    { name: 'Polska',                 cat: 'countries', on: false, desc: '🇵🇱 Poland (Polish)' },
+    { name: 'Philippines',            cat: 'countries', on: false, desc: '🇵🇭 Philippines news & community' },
+    { name: 'ukraine',                cat: 'countries', on: false, desc: '🇺🇦 Ukraine news & community' },
+    { name: 'China_irl',              cat: 'countries', on: false, desc: '🇨🇳 China discussion (Chinese)' },
+    { name: 'Turkey',                 cat: 'countries', on: false, desc: '🇹🇷 Turkey community' },
+    { name: 'Egypt',                  cat: 'countries', on: false, desc: '🇪🇬 Egypt community' },
+    { name: 'Thailand',               cat: 'countries', on: false, desc: '🇹🇭 Thailand community' },
+    { name: 'indonesia',              cat: 'countries', on: false, desc: '🇮🇩 Indonesia community' },
+    { name: 'malaysia',               cat: 'countries', on: false, desc: '🇲🇾 Malaysia community' },
+    { name: 'pakistan',                cat: 'countries', on: false, desc: '🇵🇰 Pakistan news & community' },
+    { name: 'argentina',              cat: 'countries', on: false, desc: '🇦🇷 Argentina community' },
+    { name: 'chile',                  cat: 'countries', on: false, desc: '🇨🇱 Chile community' },
+    { name: 'colombia',               cat: 'countries', on: false, desc: '🇨🇴 Colombia community' },
+    { name: 'ireland',                cat: 'countries', on: false, desc: '🇮🇪 Ireland community & news' },
+    { name: 'newzealand',             cat: 'countries', on: false, desc: '🇳🇿 New Zealand community' },
+    { name: 'Switzerland',            cat: 'countries', on: false, desc: '🇨🇭 Switzerland community' },
+    { name: 'Austria',                cat: 'countries', on: false, desc: '🇦🇹 Austria community' },
+    { name: 'portugal',               cat: 'countries', on: false, desc: '🇵🇹 Portugal community' },
+    { name: 'greece',                 cat: 'countries', on: false, desc: '🇬🇷 Greece community' },
+    { name: 'Romania',                cat: 'countries', on: false, desc: '🇷🇴 Romania community' },
+    { name: 'czech',                  cat: 'countries', on: false, desc: '🇨🇿 Czech Republic community' },
+    { name: 'hungary',                cat: 'countries', on: false, desc: '🇭🇺 Hungary community' },
+    { name: 'Finland',                cat: 'countries', on: false, desc: '🇫🇮 Finland community' },
+    { name: 'Norway',                 cat: 'countries', on: false, desc: '🇳🇴 Norway community' },
+    { name: 'Denmark',                cat: 'countries', on: false, desc: '🇩🇰 Denmark community' },
+    { name: 'Belgium',                cat: 'countries', on: false, desc: '🇧🇪 Belgium community' },
+    { name: 'Israel',                 cat: 'countries', on: false, desc: '🇮🇱 Israel community' },
+    { name: 'kenya',                  cat: 'countries', on: false, desc: '🇰🇪 Kenya community' },
+    { name: 'ethiopia',               cat: 'countries', on: false, desc: '🇪🇹 Ethiopia community' },
+    { name: 'iraq',                   cat: 'countries', on: false, desc: '🇮🇶 Iraq community' },
+    { name: 'saudiarabia',            cat: 'countries', on: false, desc: '🇸🇦 Saudi Arabia community' },
+    { name: 'bangladesh',             cat: 'countries', on: false, desc: '🇧🇩 Bangladesh community' },
+    { name: 'vietnam',                cat: 'countries', on: false, desc: '🇻🇳 Vietnam community' },
+    { name: 'Peru',                   cat: 'countries', on: false, desc: '🇵🇪 Peru community' },
+    { name: 'venezuela',              cat: 'countries', on: false, desc: '🇻🇪 Venezuela community' },
+    { name: 'Morocco',                cat: 'countries', on: false, desc: '🇲🇦 Morocco community' },
+    { name: 'Ghana',                  cat: 'countries', on: false, desc: '🇬🇭 Ghana community' },
+    { name: 'taiwan',                 cat: 'countries', on: false, desc: '🇹🇼 Taiwan community' },
+
+    // ── Daily Dose / Cool Stuff ──
+    { name: 'Damnthatsinteresting',   cat: 'dailydose', on: false, desc: 'Amazing discoveries & stories' },
+    { name: 'BeAmazed',               cat: 'dailydose', on: false, desc: 'Jaw-dropping content' },
+    { name: 'NatureIsFuckingLit',     cat: 'dailydose', on: false, desc: 'Mind-blowing nature' },
+    { name: 'HumansAreMetal',         cat: 'dailydose', on: false, desc: 'Incredible human feats' },
+    { name: 'nextfuckinglevel',       cat: 'dailydose', on: false, desc: 'Next level achievements' },
+    { name: 'ThatsInsane',            cat: 'dailydose', on: false, desc: 'Insane real-world moments' },
+    { name: 'MadeMeSmile',            cat: 'dailydose', on: false, desc: 'Wholesome daily dose' },
+    { name: 'OldSchoolCool',          cat: 'dailydose', on: false, desc: 'Cool history moments' },
+    { name: 'woahdude',               cat: 'dailydose', on: false, desc: 'Mind-bending content' },
+    { name: 'AbsoluteUnits',          cat: 'dailydose', on: false, desc: 'Impressively sized things' },
+
     // ── Lifestyle / Misc ──
     { name: 'LifeProTips',          cat: 'misc',          on: false, desc: 'Life hacks' },
     { name: 'mildlyinteresting',    cat: 'misc',          on: false, desc: 'Mildly interesting' },
@@ -165,6 +235,8 @@ const Store = (() => {
     { id: 'entertainment',  label: '🎬 ENTERTAINMENT' },
     { id: 'sports',         label: '⚽ SPORTS' },
     { id: 'community',      label: '💬 COMMUNITY' },
+    { id: 'countries',      label: '🌍 COUNTRIES' },
+    { id: 'dailydose',      label: '✨ DAILY DOSE' },
     { id: 'misc',           label: '💡 MISC' }
   ];
 
@@ -318,7 +390,20 @@ const Store = (() => {
   function scoreItem(item) {
     const now = Date.now();
     const ageHours = (now - item.created) / 3600000;
-    const engagement = (item.score || 0) + (item.comments || 0) * 2;
+
+    // Normalize engagement so Reddit doesn't dominate with raw upvotes
+    const raw = (item.score || 0) + (item.comments || 0) * 2;
+    let engagement;
+    if (item.source === 'reddit') {
+      // Log-scale: compresses 10k upvotes vs 100, prevents Reddit dominance
+      engagement = Math.log10(raw + 1) * 15;
+    } else if (item.source === 'hackernews') {
+      engagement = Math.log10(raw + 1) * 18;
+    } else {
+      // Non-social sources (RSS, NewsAPI, Guardian, GNews, etc.) get a solid baseline
+      engagement = 30;
+    }
+
     const interestBoost = 1 + getInterestScore(item.category) * 4;
 
     // Boost items from subreddits the user has explicitly selected
@@ -344,10 +429,17 @@ const Store = (() => {
     return (engagement * interestBoost * subBoost * reactionMul * showLessMul + 1) / recencyDecay;
   }
 
-  function rankItems(items) {
+  function rankItems(items, sortMode = 'ranked') {
     const blockedIds = getBlocked();
-    return items
-      .filter(i => !blockedIds.includes(i.id))
+    const filtered = items.filter(i => !blockedIds.includes(i.id));
+    if (sortMode === 'newest') {
+      return filtered.sort((a, b) => (b.created || 0) - (a.created || 0));
+    }
+    if (sortMode === 'oldest') {
+      return filtered.sort((a, b) => (a.created || 0) - (b.created || 0));
+    }
+    // Default: ranked
+    return filtered
       .map(i => ({ ...i, _rank: scoreItem(i) }))
       .sort((a, b) => b._rank - a._rank);
   }

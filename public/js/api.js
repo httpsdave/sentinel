@@ -45,5 +45,10 @@ const API = (() => {
     return _json('/api/comments?' + qs);
   }
 
-  return { getFeed, getReddit, getHackerNews, getNews, getRSS, getStatus, getComments };
+  async function getEvents(year, month, country) {
+    const qs = new URLSearchParams({ year, month, country });
+    return _json('/api/events?' + qs);
+  }
+
+  return { getFeed, getReddit, getHackerNews, getNews, getRSS, getStatus, getComments, getEvents };
 })();

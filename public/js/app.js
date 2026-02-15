@@ -6,7 +6,8 @@ const App = (() => {
   let allItems = [];
   let filteredItems = [];
   let currentCategory = 'all';
-  let activeSources = new Set(['reddit', 'hackernews', 'rss', 'newsapi', 'guardian', 'wikinews', 'thenewsapi']);
+  let activeSources = new Set(['reddit', 'hackernews', 'rss', 'newsapi', 'guardian', 'wikinews', 'thenewsapi', 'gnews']);
+  let sortMode = 'ranked';
   let refreshTimer = null;
   let searchDebounce = null;
   let nextRefresh = 0;
@@ -18,6 +19,7 @@ const App = (() => {
     Radar.init(document.getElementById('radar-canvas'));
     WorldMap.init(document.getElementById('map-container'));
     Timeline.init(document.getElementById('feed-list'));
+    Calendar.init(document.getElementById('calendar-container'));
 
     // Apply saved settings
     const cfg = Store.getSettings();
@@ -56,6 +58,15 @@ const App = (() => {
         applyFilters();
       });
     });
+
+    // ── Sort mode ──
+    document.getElementById('sort-mode').addEventListener('change', (e) => {
+      sortMode = e.target.value;
+      applyFilters();
+    });
+
+    // Show/hide LOCAL button based on region setting
+    updateLocalButton();
 
     // ── Search ──
     document.getElementById('search-input').addEventListener('input', (e) => {
@@ -116,6 +127,7 @@ const App = (() => {
     document.getElementById('setting-country')?.addEventListener('change', e => {
       Store.saveSetting('country', e.target.value);
       updateRegionStatus();
+      updateLocalButton();
       loadFeed();   // reload with new country context
     });
 
@@ -193,7 +205,7 @@ const App = (() => {
       tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
     });
 
-    // ── Saved view ──
+    // ── Saved items (in settings panel) ──
     document.getElementById('clear-saved')?.addEventListener('click', () => {
       if (confirm('Purge all saved items?')) {
         Store.clearBookmarks();
@@ -229,7 +241,7 @@ const App = (() => {
 
     if (view === 'radar') requestAnimationFrame(() => Radar.resize());
     if (view === 'map') requestAnimationFrame(() => WorldMap.resize());
-    if (view === 'saved') renderSaved();
+    if (view === 'calendar') requestAnimationFrame(() => Calendar.resize());
   }
 
   /* ═══ DATA LOADING ═══════════════════════════════ */
@@ -249,6 +261,28 @@ const App = (() => {
     }
   }
 
+  /* ═══ LOCAL BUTTON ══════════════════════════════ */
+  function updateLocalButton() {
+    const country = Store.getSettings().country || 'auto';
+    const btn = document.getElementById('filter-local');
+    if (!btn) return;
+    if (country && country !== 'auto') {
+      btn.classList.remove('hidden');
+      // Show the country code in the button
+      const sel = document.getElementById('setting-country');
+      const label = sel ? sel.options[sel.selectedIndex]?.text || country.toUpperCase() : country.toUpperCase();
+      btn.textContent = '📍 ' + label;
+    } else {
+      btn.classList.add('hidden');
+      // If local was active, switch back to all
+      if (currentCategory === 'local') {
+        currentCategory = 'all';
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.filter-btn[data-category="all"]')?.classList.add('active');
+      }
+    }
+  }
+
   function applyFilters() {
     let pool = [...allItems];
 
@@ -256,9 +290,9 @@ const App = (() => {
     pool = pool.filter(i => activeSources.has(i.source));
 
     // Category filter
-    // Community is a separate category — excluded from 'all' view,
-    // only shown when explicitly selected
-    if (currentCategory === 'all') {
+    if (currentCategory === 'local') {
+      pool = pool.filter(i => i.local);
+    } else if (currentCategory === 'all') {
       pool = pool.filter(i => i.category !== 'community');
     } else {
       pool = pool.filter(i => i.category === currentCategory);
@@ -274,8 +308,8 @@ const App = (() => {
       );
     }
 
-    // Rank
-    filteredItems = Store.rankItems(pool);
+    // Rank / Sort
+    filteredItems = Store.rankItems(pool, sortMode);
 
     // Push to all views
     Radar.setItems(filteredItems);
@@ -460,33 +494,38 @@ const App = (() => {
     const bm = Store.getBookmarks();
     const list = document.getElementById('saved-list');
     const empty = document.getElementById('saved-empty');
+    const countLabel = document.getElementById('saved-count-label');
+
+    if (countLabel) countLabel.textContent = bm.length + ' saved item' + (bm.length !== 1 ? 's' : '');
 
     if (!bm.length) {
-      list.innerHTML = '';
-      empty.classList.remove('hidden');
+      if (list) list.innerHTML = '';
+      if (empty) empty.classList.remove('hidden');
       return;
     }
-    empty.classList.add('hidden');
+    if (empty) empty.classList.add('hidden');
 
-    list.innerHTML = bm.map((item, idx) => `
-      <article class="feed-item" data-idx="${idx}">
-        <div class="feed-score" style="color:var(--green)">★</div>
-        <div class="feed-body">
-          <div class="feed-title">${esc(item.title)}</div>
-          <div class="feed-meta">
-            <span class="feed-source">${esc(item.sourceDetail || item.source)}</span>
-            <span>${timeAgo(item.created)}</span>
+    if (list) {
+      list.innerHTML = bm.map((item, idx) => `
+        <article class="feed-item" data-idx="${idx}" style="padding:10px 14px;">
+          <div class="feed-score" style="color:var(--green);min-width:40px;font-size:16px;">★</div>
+          <div class="feed-body">
+            <div class="feed-title" style="font-size:15px;">${esc(item.title)}</div>
+            <div class="feed-meta">
+              <span class="feed-source">${esc(item.sourceDetail || item.source)}</span>
+              <span>${timeAgo(item.created)}</span>
+            </div>
           </div>
-        </div>
-      </article>
-    `).join('');
+        </article>
+      `).join('');
 
-    list.querySelectorAll('.feed-item').forEach(el => {
-      el.addEventListener('click', () => {
-        const i = parseInt(el.dataset.idx);
-        if (bm[i]) showDetail(bm[i]);
+      list.querySelectorAll('.feed-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const i = parseInt(el.dataset.idx);
+          if (bm[i]) showDetail(bm[i]);
+        });
       });
-    });
+    }
   }
 
   /* ═══ SETTINGS ═══════════════════════════════════ */
@@ -500,6 +539,7 @@ const App = (() => {
     if (opening && name === 'settings') {
       renderInterests();
       renderSubManager();
+      renderSaved();
       // Update auth button label
       const user = Auth.getUser();
       const authBtn = document.getElementById('setting-auth-btn');
@@ -755,7 +795,8 @@ const App = (() => {
     { label: 'Radar View', icon: '◉', target: 'view-radar', group: 'nav' },
     { label: 'Feed View', icon: '≡', target: 'view-feed', group: 'nav' },
     { label: 'Map View', icon: '⊕', target: 'view-map', group: 'nav' },
-    { label: 'Saved Items', icon: '★', target: 'view-saved', group: 'nav' },
+    { label: 'Events', icon: '▣', target: 'view-calendar', group: 'nav' },
+    { label: 'Saved Items', icon: '★', target: 'saved-settings-section', group: 'settings' },
   ];
 
   function showSearchSuggestions(query) {
@@ -852,7 +893,7 @@ const App = (() => {
       case 'r': switchView('radar'); break;
       case 'f': switchView('feed'); break;
       case 'm': switchView('map'); break;
-      case 's': switchView('saved'); break;
+      case 'c': switchView('calendar'); break;
       case '/': e.preventDefault(); document.getElementById('search-input').focus(); break;
       case 'escape':
         hideDetail();
