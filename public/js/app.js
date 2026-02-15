@@ -58,9 +58,20 @@ const App = (() => {
     });
 
     // ── Search ──
-    document.getElementById('search-input').addEventListener('input', () => {
+    document.getElementById('search-input').addEventListener('input', (e) => {
       clearTimeout(searchDebounce);
-      searchDebounce = setTimeout(applyFilters, 250);
+      searchDebounce = setTimeout(() => {
+        showSearchSuggestions(e.target.value);
+        applyFilters();
+      }, 200);
+    });
+    document.getElementById('search-input').addEventListener('focus', (e) => {
+      if (e.target.value.trim()) showSearchSuggestions(e.target.value);
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-box')) {
+        document.getElementById('search-suggestions')?.classList.add('hidden');
+      }
     });
 
     // ── Refresh button ──
@@ -721,7 +732,117 @@ const App = (() => {
 
   function updateClock() {
     const el = document.getElementById('status-time');
-    if (el) el.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    if (el) {
+      const now = new Date();
+      el.textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+    }
+  }
+
+  /* ═══ SEARCH SUGGESTIONS (Settings + Navigation) ═══ */
+  const settingsMap = [
+    { label: 'Auto-refresh interval', icon: '⟳', target: 'setting-refresh', group: 'settings' },
+    { label: 'CRT Scanline Effect', icon: '▦', target: 'setting-crt', group: 'settings' },
+    { label: 'Radar Sound', icon: '🔊', target: 'setting-sound', group: 'settings' },
+    { label: 'Local News Region', icon: '🌍', target: 'setting-country', group: 'settings' },
+    { label: 'Radar Sweep Speed', icon: '◉', target: 'setting-radar-speed', group: 'settings' },
+    { label: 'Subreddit Sources', icon: '📡', target: 'sub-manager', group: 'settings' },
+    { label: 'Interest Profile', icon: '📊', target: 'interest-chart', group: 'settings' },
+    { label: 'Keyboard Shortcuts', icon: '⌨', target: 'shortcuts', group: 'settings' },
+    { label: 'Wipe All Local Data', icon: '⚠', target: 'setting-clear-data', group: 'settings' },
+    { label: 'Account / Sign In', icon: '👤', target: 'setting-auth-btn', group: 'account' },
+    { label: 'Sign Up', icon: '👤', target: 'auth', group: 'account' },
+    { label: 'About Sentinel', icon: 'ⓘ', target: 'about', group: 'page' },
+    { label: 'Radar View', icon: '◉', target: 'view-radar', group: 'nav' },
+    { label: 'Feed View', icon: '≡', target: 'view-feed', group: 'nav' },
+    { label: 'Map View', icon: '⊕', target: 'view-map', group: 'nav' },
+    { label: 'Saved Items', icon: '★', target: 'view-saved', group: 'nav' },
+  ];
+
+  function showSearchSuggestions(query) {
+    const container = document.getElementById('search-suggestions');
+    if (!container) return;
+    const q = query.trim().toLowerCase();
+
+    if (!q) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    const matches = settingsMap.filter(s =>
+      s.label.toLowerCase().includes(q)
+    );
+
+    if (!matches.length) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    container.innerHTML = matches.map((s, i) => `
+      <div class="search-suggestion-item" data-idx="${i}">
+        <span class="sug-icon">${s.icon}</span>
+        <span class="sug-text">${highlightMatch(s.label, q)}</span>
+        <span class="sug-badge">${s.group.toUpperCase()}</span>
+      </div>
+    `).join('');
+
+    container.classList.remove('hidden');
+
+    container.querySelectorAll('.search-suggestion-item').forEach((el, idx) => {
+      el.addEventListener('click', () => {
+        navigateToSetting(matches[idx]);
+        container.classList.add('hidden');
+        document.getElementById('search-input').value = '';
+      });
+    });
+  }
+
+  function highlightMatch(text, query) {
+    const idx = text.toLowerCase().indexOf(query);
+    if (idx === -1) return text;
+    return text.slice(0, idx) +
+      '<span style="color:var(--green);text-shadow:0 0 4px var(--green-glow)">' +
+      text.slice(idx, idx + query.length) + '</span>' +
+      text.slice(idx + query.length);
+  }
+
+  function navigateToSetting(item) {
+    if (item.group === 'nav') {
+      switchView(item.target.replace('view-', ''));
+      return;
+    }
+    if (item.group === 'page' && item.target === 'about') {
+      window.open('/about.html', '_blank');
+      return;
+    }
+    if (item.group === 'account' && item.target === 'auth') {
+      openAuthModal();
+      return;
+    }
+
+    // Open settings panel
+    const panel = document.getElementById('settings-panel');
+    if (panel.classList.contains('hidden')) {
+      togglePanel('settings');
+    }
+
+    // Scroll to the target element
+    setTimeout(() => {
+      const target = document.getElementById(item.target);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Flash highlight effect
+        target.style.outline = '1px solid var(--green)';
+        target.style.outlineOffset = '4px';
+        target.style.transition = 'outline-color 1.5s';
+        setTimeout(() => {
+          target.style.outlineColor = 'transparent';
+          setTimeout(() => {
+            target.style.outline = '';
+            target.style.outlineOffset = '';
+          }, 1500);
+        }, 800);
+      }
+    }, 200);
   }
 
   /* ═══ KEYBOARD ═══════════════════════════════════ */

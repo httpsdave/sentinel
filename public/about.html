@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENTINEL — About</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
+  <style>
+    :root {
+      --bg: #000; --green: #00ff41; --green-dim: #00cc33; --green-dark: #004d14;
+      --green-glow: rgba(0,255,65,0.35); --green-border: rgba(0,255,65,0.15);
+      --text-dim: #00bb33; --text-muted: #006622; --text-xmuted: #003d14;
+      --font: 'Courier New', Consolas, monospace;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { background:var(--bg); color:var(--green); font-family:var(--font); font-size:16px; line-height:1.7; }
+    ::selection { background:var(--green); color:var(--bg); }
+    a { color:var(--green); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+
+    .wrap { max-width:640px; margin:0 auto; padding:50px 20px 60px; }
+    .back { font-size:13px; color:var(--text-muted); letter-spacing:1px; margin-bottom:36px; display:inline-block; }
+    .back:hover { color:var(--green); text-decoration:none; }
+    h1 { font-size:32px; letter-spacing:6px; text-shadow:0 0 20px var(--green-glow); margin-bottom:6px; }
+    .sub { font-size:12px; color:var(--text-muted); letter-spacing:2px; margin-bottom:36px; }
+
+    .story { color:var(--text-dim); font-size:15px; line-height:1.8; margin-bottom:36px; }
+
+    .dev { display:flex; gap:18px; align-items:center; padding:18px; border:1px solid var(--green-border); margin-bottom:36px; }
+    .dev:hover { border-color:var(--green-dark); }
+    .dev img { width:80px; height:80px; border:1px solid var(--green-dark); object-fit:cover; flex-shrink:0; }
+    .dev-name { font-size:17px; font-weight:bold; margin-bottom:2px; }
+    .dev-role { font-size:11px; color:var(--text-muted); letter-spacing:1.5px; margin-bottom:8px; }
+    .dev-links { display:flex; gap:8px; }
+    .dev-links a { font-size:12px; color:var(--text-dim); border:1px solid var(--green-border); padding:4px 10px; }
+    .dev-links a:hover { border-color:var(--green-dark); color:var(--green); text-decoration:none; }
+
+    .foot { font-size:11px; color:var(--text-xmuted); text-align:center; letter-spacing:1px; padding-top:24px; border-top:1px solid var(--green-border); }
+
+    @media (max-width:500px) {
+      .wrap { padding:30px 16px 40px; }
+      h1 { font-size:24px; }
+      .dev { flex-direction:column; text-align:center; }
+      .dev-links { justify-content:center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="/" class="back">◂ BACK TO SENTINEL</a>
+
+    <h1>▓ SENTINEL</h1>
+    <div class="sub">ABOUT</div>
+
+    <div class="story">
+      "I originally intended for Sentinel to be a personal thing which I would use to keep up with
+      current events and world news all in one place since I was lazy, but here we are."
+      <br><br>
+      Built with Node.js, Express, Vanilla JavaScript, Canvas API, Leaflet.js, and Supabase.
+      Pulls from Reddit, Hacker News, RSS feeds, NewsAPI, The Guardian, WikiNews, and TheNewsAPI.
+    </div>
+
+    <div class="dev">
+      <img src="https://github.com/httpsdave.png" alt="dev" onerror="this.style.display='none'">
+      <div>
+        <div class="dev-name">httpsdave</div>
+        <div class="dev-role">CREATOR & MAINTAINER</div>
+        <div class="dev-links">
+          <a href="https://github.com/httpsdave" target="_blank">GitHub ↗</a>
+          <a href="https://github.com/httpsdave/sentinel" target="_blank">Source Code ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">▓ SENTINEL v1.0</div>
+  </div>
+</body>
+</html>
