@@ -204,6 +204,7 @@ const App = (() => {
     document.querySelectorAll('.auth-tab').forEach(tab => {
       tab.addEventListener('click', () => switchAuthTab(tab.dataset.tab));
     });
+    document.getElementById('pw-change-btn')?.addEventListener('click', handleChangePassword);
 
     // ── Saved items (in settings panel) ──
     document.getElementById('clear-saved')?.addEventListener('click', () => {
@@ -226,6 +227,11 @@ const App = (() => {
 
     // Init auth (must come after Store is loaded)
     await Auth.init();
+
+    // Apply saved profile icon if authenticated
+    if (Auth.isAuthenticated()) {
+      _updateHeaderAvatar(getSelectedAvatar());
+    }
   }
 
   /* ═══ VIEW SWITCHING ═════════════════════════════ */
@@ -579,6 +585,57 @@ const App = (() => {
   /* ═══ AUTH MODAL ═════════════════════════════════ */
   let authMode = 'signin';
 
+  /* ── Profile Icons (hacker/anonymous themed, rendered as SVG) ── */
+  const PROFILE_ICONS = [
+    { id: 'skull',    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><circle cx="12" cy="10" r="7"/><circle cx="9" cy="9" r="1.5" fill="#00ff41"/><circle cx="15" cy="9" r="1.5" fill="#00ff41"/><path d="M9 17v3M12 17v3M15 17v3"/><path d="M8 14c1.3 1 2.5 1.3 4 1.3s2.7-.3 4-1.3"/></svg>' },
+    { id: 'ghost',    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><path d="M12 2C7 2 4 6 4 10v10l2.5-2 2.5 2 2.5-2L14 20l2.5-2L19 20V10c0-4-3-8-8-8z"/><circle cx="9" cy="10" r="1.5" fill="#00ff41"/><circle cx="15" cy="10" r="1.5" fill="#00ff41"/></svg>' },
+    { id: 'mask',     svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><path d="M12 3C6 3 2 8 2 12c0 2 1 4 3 5l2-1 2.5 1L12 16l2.5 1L17 16l2 1c2-1 3-3 3-5 0-4-4-9-10-9z"/><path d="M7 10h3v2H7zM14 10h3v2h-3z"/></svg>' },
+    { id: 'terminal', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M6 8l4 4-4 4M12 16h6"/></svg>' },
+    { id: 'eye',      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3" fill="#00ff41"/></svg>' },
+    { id: 'lock',     svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 118 0v4"/><circle cx="12" cy="16" r="1.5" fill="#00ff41"/></svg>' },
+    { id: 'radar',    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="#00ff41"/><line x1="12" y1="2" x2="12" y2="12"/></svg>' },
+    { id: 'shield',   svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><path d="M12 2L3 7v5c0 5.5 3.8 10.3 9 12 5.2-1.7 9-6.5 9-12V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg>' },
+    { id: 'anon',     svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><path d="M12 2a9 9 0 00-9 9v2h2l1.5 6h11L19 13h2v-2a9 9 0 00-9-9z"/><path d="M7 10h4M13 10h4"/><path d="M10 14c.6.6 1.3 1 2 1s1.4-.4 2-1"/></svg>' },
+    { id: 'glitch',   svg: '<svg viewBox="0 0 24 24" fill="none" stroke="#00ff41" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18"/><path d="M7 3v6M12 9v6M17 15v6" stroke-dasharray="2 2"/><text x="7" y="13" font-size="5" fill="#00ff41" font-family="monospace">0x</text></svg>' },
+  ];
+
+  function getSelectedAvatar() {
+    return Store.getSettings().avatar || 'skull';
+  }
+
+  function setSelectedAvatar(id) {
+    Store.saveSetting('avatar', id);
+    _updateHeaderAvatar(id);
+  }
+
+  function _updateHeaderAvatar(avatarId) {
+    const btn = document.getElementById('auth-btn');
+    if (!btn || !Auth.isAuthenticated()) return;
+    const icon = PROFILE_ICONS.find(i => i.id === avatarId) || PROFILE_ICONS[0];
+    btn.innerHTML = `<span class="auth-avatar-icon">${icon.svg}</span>`;
+  }
+
+  function renderAvatarChooser() {
+    const container = document.getElementById('avatar-chooser');
+    if (!container) return;
+    const current = getSelectedAvatar();
+    container.innerHTML = PROFILE_ICONS.map(icon => `
+      <div class="avatar-option ${icon.id === current ? 'selected' : ''}" data-avatar="${icon.id}" title="${icon.id}">
+        ${icon.svg}
+      </div>
+    `).join('');
+    container.querySelectorAll('.avatar-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        setSelectedAvatar(opt.dataset.avatar);
+        renderAvatarChooser();
+        // Update the large avatar display
+        const display = document.getElementById('auth-user-avatar');
+        const icon = PROFILE_ICONS.find(i => i.id === opt.dataset.avatar) || PROFILE_ICONS[0];
+        if (display) display.innerHTML = icon.svg;
+      });
+    });
+  }
+
   function openAuthModal() {
     const user = Auth.getUser();
     if (user) {
@@ -587,6 +644,20 @@ const App = (() => {
       document.getElementById('auth-tabs')?.classList.add('hidden');
       document.getElementById('auth-user-info').classList.remove('hidden');
       document.getElementById('auth-user-email').textContent = user.email;
+      // Show current avatar
+      const avatarId = getSelectedAvatar();
+      const icon = PROFILE_ICONS.find(i => i.id === avatarId) || PROFILE_ICONS[0];
+      const avatarEl = document.getElementById('auth-user-avatar');
+      if (avatarEl) avatarEl.innerHTML = icon.svg;
+      // Render avatar chooser
+      renderAvatarChooser();
+      // Reset password fields
+      const pwNew = document.getElementById('pw-new');
+      const pwConfirm = document.getElementById('pw-confirm');
+      const pwStatus = document.getElementById('pw-status');
+      if (pwNew) pwNew.value = '';
+      if (pwConfirm) pwConfirm.value = '';
+      if (pwStatus) { pwStatus.textContent = ''; pwStatus.className = 'auth-status'; }
     } else {
       // Show sign-in form
       document.getElementById('auth-form').classList.remove('hidden');
@@ -646,6 +717,39 @@ const App = (() => {
     await Auth.signOut();
     closeAuthModal();
   }
+
+  async function handleChangePassword() {
+    const pw = document.getElementById('pw-new')?.value;
+    const confirm = document.getElementById('pw-confirm')?.value;
+    const status = document.getElementById('pw-status');
+    if (!status) return;
+
+    if (!pw || pw.length < 6) {
+      status.textContent = '> Password must be at least 6 characters';
+      status.className = 'auth-status error';
+      return;
+    }
+    if (pw !== confirm) {
+      status.textContent = '> Passwords do not match';
+      status.className = 'auth-status error';
+      return;
+    }
+
+    status.textContent = '> Updating...';
+    status.className = 'auth-status';
+
+    try {
+      await Auth.changePassword(pw);
+      status.textContent = '> Password updated successfully';
+      status.className = 'auth-status success';
+      document.getElementById('pw-new').value = '';
+      document.getElementById('pw-confirm').value = '';
+    } catch (err) {
+      status.textContent = '> ERROR: ' + (err.message || 'Failed to update password');
+      status.className = 'auth-status error';
+    }
+  }
+
   /* ═══ SUBREDDIT MANAGER ═══════════════════════════ */
   function renderSubManager() {
     const container = document.getElementById('sub-manager');

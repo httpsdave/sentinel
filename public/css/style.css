@@ -311,9 +311,10 @@ a:hover { text-decoration: underline; }
   padding: 0 10px;
   background: var(--bg-1);
   border-bottom: 1px solid var(--green-border);
-  gap: 10px;
+  gap: 6px;
   z-index: 100;
   position: relative;
+  overflow: hidden;
 }
 
 .header-left { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -324,21 +325,27 @@ a:hover { text-decoration: underline; }
   color: var(--green);
   text-shadow: 0 0 8px var(--green-glow), 0 0 2px var(--green-glow);
   letter-spacing: 3px;
+  white-space: nowrap;
 }
 .version { color: var(--text-xmuted); font-size: 12px; }
 
 /* Nav Buttons */
-#nav-desktop { display: flex; gap: 2px; flex-shrink: 0; }
+#nav-desktop { display: flex; gap: 2px; flex-shrink: 1; min-width: 0; }
 
 .nav-btn {
   background: none;
   border: 1px solid transparent;
   color: var(--text-muted);
-  padding: 9px 20px;
+  padding: 9px 16px;
   font: 16px/1 var(--font);
   cursor: pointer;
   letter-spacing: 1px;
   transition: all 0.1s;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .nav-btn:hover { border-color: var(--green-border); color: var(--text-dim); }
 .nav-btn.active {
@@ -349,9 +356,9 @@ a:hover { text-decoration: underline; }
 }
 
 /* Header Right */
-.header-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.header-right { display: flex; align-items: center; gap: 4px; margin-left: auto; flex-shrink: 1; min-width: 0; }
 
-.search-box { position: relative; }
+.search-box { position: relative; flex-shrink: 1; min-width: 0; }
 .search-box input {
   background: var(--bg);
   border: 1px solid var(--green-border);
@@ -359,6 +366,7 @@ a:hover { text-decoration: underline; }
   padding: 8px 12px;
   font: 16px var(--font);
   width: 240px;
+  max-width: 100%;
   outline: none;
   transition: border-color 0.15s;
 }
@@ -716,6 +724,40 @@ a:hover { text-decoration: underline; }
   flex: 1;
   text-align: center;
 }
+
+.cal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+
+.cal-select {
+  background: var(--bg);
+  border: 1px solid var(--green-border);
+  color: var(--green);
+  padding: 6px 10px;
+  font: 15px var(--font);
+  cursor: pointer;
+  outline: none;
+  letter-spacing: 1px;
+  text-shadow: 0 0 4px var(--green-glow);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.cal-select:hover,
+.cal-select:focus {
+  border-color: var(--green-dim);
+  background: var(--green-subtle);
+}
+.cal-select option {
+  background: var(--bg-1);
+  color: var(--green);
+  font-family: var(--font);
+}
+#cal-month-select { min-width: 130px; }
+#cal-year-select { min-width: 75px; }
 
 .cal-nav-btn {
   background: none;
@@ -1503,6 +1545,122 @@ kbd {
   background: var(--green-subtle);
 }
 
+/* Auth sections (change password, avatar chooser) */
+.auth-section {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 16px;
+  border-top: 1px solid var(--green-border);
+  padding-top: 14px;
+}
+.auth-section-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+/* Avatar chooser */
+.avatar-chooser {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.avatar-option {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--green-border);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 28px;
+  line-height: 1;
+  transition: all 0.15s;
+  position: relative;
+}
+.avatar-option:hover {
+  border-color: var(--green-dim);
+  background: var(--green-subtle);
+  box-shadow: 0 0 8px rgba(0,255,65,0.15);
+}
+.avatar-option.selected {
+  border-color: var(--green);
+  background: var(--green-darker);
+  box-shadow: 0 0 12px rgba(0,255,65,0.2);
+}
+.avatar-option.selected::after {
+  content: '✓';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 10px;
+  color: var(--green);
+  background: var(--bg);
+  border: 1px solid var(--green);
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.avatar-option svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Auth user avatar display (in modal) */
+.auth-user-avatar {
+  margin-bottom: 10px;
+  font-size: 52px;
+  line-height: 1;
+}
+.auth-user-avatar svg {
+  width: 52px;
+  height: 52px;
+}
+
+/* Change password form */
+.auth-pw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.auth-pw-form input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--green-border);
+  color: var(--green);
+  padding: 8px 12px;
+  font: 14px var(--font);
+  outline: none;
+}
+.auth-pw-form input:focus {
+  border-color: var(--green-dim);
+}
+.auth-pw-form input::placeholder { color: var(--text-xmuted); }
+.auth-pw-form .btn-outline {
+  margin-top: 4px;
+}
+
+/* Header avatar icon (replaces letter initial for custom icons) */
+.auth-avatar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 18px;
+  line-height: 1;
+}
+.auth-avatar-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* ── STATUS BAR ────────────────────────────────────── */
 #status-bar {
   position: fixed;
@@ -1833,6 +1991,27 @@ kbd {
 }
 
 /* ── RESPONSIVE ────────────────────────────────────── */
+
+/* Half-screen / medium window (desktop nav still visible but compressed) */
+@media (max-width: 1100px) {
+  .logo { font-size: 20px; letter-spacing: 2px; }
+  .version { display: none; }
+  .nav-btn { padding: 9px 12px; font-size: 14px; letter-spacing: 0.5px; }
+  .search-box input { width: 160px; font-size: 14px; }
+  .icon-btn { width: 36px; height: 36px; font-size: 18px; }
+  #mute-btn { display: none; }
+}
+
+/* Narrow half-screen — compact everything further */
+@media (max-width: 920px) {
+  .logo { font-size: 18px; letter-spacing: 1px; }
+  .nav-btn { padding: 8px 10px; font-size: 13px; }
+  .search-box input { width: 120px; font-size: 13px; padding: 6px 10px; }
+  .icon-btn { width: 34px; height: 34px; font-size: 16px; }
+  #refresh-btn { display: none; }
+}
+
+/* Mobile — hide desktop nav, show bottom nav */
 @media (max-width: 768px) {
   :root {
     --panel-w: 100%;
@@ -1850,6 +2029,9 @@ kbd {
   .cal-day-num { font-size: 13px; }
   .cal-dot { width: 4px; height: 4px; }
   .cal-title { font-size: 16px; letter-spacing: 2px; }
+  .cal-select { font-size: 12px; padding: 4px 6px; }
+  #cal-month-select { min-width: 100px; }
+  #cal-year-select { min-width: 60px; }
   .cal-nav-btn { width: 32px; height: 32px; font-size: 16px; }
   .cal-upcoming-name { font-size: 12px; }
   .cal-legend { gap: 8px; }

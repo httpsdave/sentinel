@@ -103,6 +103,21 @@ const Auth = (() => {
     fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
   }
 
+  async function changePassword(newPassword) {
+    if (!configured || !accessToken) throw new Error('Not authenticated');
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + accessToken
+      },
+      body: JSON.stringify({ password: newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Password change failed');
+    return data;
+  }
+
   /* ═══ CLOUD SYNC ═════════════════════════════════ */
   async function pushToCloud() {
     if (!configured || !currentUser || !accessToken) return;
@@ -168,6 +183,7 @@ const Auth = (() => {
     if (!btn) return;
 
     if (user) {
+      // Show initial letter first; app.js will override with saved avatar icon
       const initial = (user.email || '?')[0].toUpperCase();
       btn.innerHTML = `<span class="auth-avatar">${initial}</span>`;
       btn.title = user.email;
@@ -194,10 +210,10 @@ const Auth = (() => {
   /* ═══ GETTERS ════════════════════════════════════ */
   function isAuthenticated() { return !!currentUser; }
   function getUser() { return currentUser; }
-  function isConfigured() { return !!supabase; }
+  function isConfigured() { return configured; }
 
   return {
-    init, signUp, signIn, signOut,
+    init, signUp, signIn, signOut, changePassword,
     pushToCloud, pullFromCloud,
     isAuthenticated, getUser, isConfigured
   };

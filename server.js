@@ -894,6 +894,50 @@ app.post('/api/auth/signout', async (req, res) => {
   res.json({ ok: true });
 });
 
+/* ── Auth: Change Password ── */
+app.post('/api/auth/change-password', async (req, res) => {
+  if (!SUPA_URL || !SUPA_KEY) return res.status(503).json({ error: 'Auth not configured' });
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    // Supabase: PUT /auth/v1/user with { password }
+    const url = SUPA_URL + '/auth/v1/user';
+    const data = JSON.stringify({ password });
+    const u = new URL(url);
+    const result = await new Promise((resolve, reject) => {
+      const opts = {
+        hostname: u.hostname,
+        port: u.port || 443,
+        path: u.pathname,
+        method: 'PUT',
+        headers: {
+          ..._supaHeaders(token),
+          'Content-Length': Buffer.byteLength(data)
+        }
+      };
+      const req = https.request(opts, res => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => {
+          if (res.statusCode >= 400) return reject(new Error(`Supabase ${res.statusCode}: ${body}`));
+          try { resolve(body ? JSON.parse(body) : {}); } catch { resolve({}); }
+        });
+      });
+      req.on('error', reject);
+      req.write(data);
+      req.end();
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[AUTH/CHANGE-PW]', e.message);
+    res.status(400).json({ error: e.message });
+  }
+});
+
 /* ── Auth: Get Session (verify token) ── */
 app.get('/api/auth/user', async (req, res) => {
   if (!SUPA_URL || !SUPA_KEY) return res.json({ user: null });
@@ -970,12 +1014,12 @@ app.post('/api/sync/push', async (req, res) => {
       updated_at: new Date().toISOString()
     });
 
-    const prefsUrl = new URL(SUPA_URL + '/rest/v1/user_prefs');
+    const prefsUrl = new URL(SUPA_URL + '/rest/v1/user_prefs?on_conflict=user_id');
     await new Promise((resolve, reject) => {
       const opts = {
         hostname: prefsUrl.hostname,
         port: 443,
-        path: prefsUrl.pathname,
+        path: prefsUrl.pathname + prefsUrl.search,
         method: 'POST',
         headers: {
           ..._supaHeaders(token),

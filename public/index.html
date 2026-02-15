@@ -314,9 +314,28 @@
       <div id="auth-status" class="auth-status">> Awaiting credentials...</div>
     </form>
     <div id="auth-user-info" class="auth-user-info hidden">
+      <div class="auth-user-avatar" id="auth-user-avatar"></div>
       <div class="auth-user-email" id="auth-user-email"></div>
       <div class="auth-user-since" id="auth-user-since">Session active</div>
       <div class="auth-sync-label" id="auth-sync-status">☁ Synced to cloud</div>
+
+      <!-- Profile Icon Chooser -->
+      <div class="auth-section">
+        <div class="auth-section-label">◈ PROFILE ICON</div>
+        <div class="avatar-chooser" id="avatar-chooser"></div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="auth-section">
+        <div class="auth-section-label">◈ CHANGE PASSWORD</div>
+        <div class="auth-pw-form" id="auth-pw-form">
+          <input type="password" id="pw-new" placeholder="New password" minlength="6" autocomplete="new-password">
+          <input type="password" id="pw-confirm" placeholder="Confirm password" minlength="6" autocomplete="new-password">
+          <button id="pw-change-btn" class="btn btn-outline">▸ UPDATE PASSWORD</button>
+          <div id="pw-status" class="auth-status"></div>
+        </div>
+      </div>
+
       <button id="auth-signout" class="btn btn-danger">◉ SIGN OUT</button>
     </div>
   </div>

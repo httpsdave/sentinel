@@ -53,6 +53,20 @@ const Calendar = (() => {
     const monthNames = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
       'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 
+    // Month selector options
+    const monthOptions = monthNames.map((m, i) =>
+      `<option value="${i}" ${i === month ? 'selected' : ''}>${m}</option>`
+    ).join('');
+
+    // Year selector options (range: current year -2 to +5)
+    const thisYear = new Date().getFullYear();
+    const yearStart = thisYear - 2;
+    const yearEnd = thisYear + 5;
+    let yearOptions = '';
+    for (let y = yearStart; y <= yearEnd; y++) {
+      yearOptions += `<option value="${y}" ${y === year ? 'selected' : ''}>${y}</option>`;
+    }
+
     // Group events by day
     const eventsByDay = {};
     for (const ev of events) {
@@ -148,7 +162,10 @@ const Calendar = (() => {
         <div class="cal-main">
           <div class="cal-header">
             <button class="cal-nav-btn" id="cal-prev">◂</button>
-            <div class="cal-title">${monthNames[month]} ${year}</div>
+            <div class="cal-title-group">
+              <select class="cal-select" id="cal-month-select">${monthOptions}</select>
+              <select class="cal-select" id="cal-year-select">${yearOptions}</select>
+            </div>
             <button class="cal-nav-btn" id="cal-next">▸</button>
             <button class="cal-nav-btn cal-today-btn" id="cal-go-today">TODAY</button>
           </div>
@@ -176,6 +193,20 @@ const Calendar = (() => {
     container.querySelector('#cal-prev')?.addEventListener('click', () => navigateMonth(-1));
     container.querySelector('#cal-next')?.addEventListener('click', () => navigateMonth(1));
     container.querySelector('#cal-go-today')?.addEventListener('click', goToday);
+
+    container.querySelector('#cal-month-select')?.addEventListener('change', (e) => {
+      currentDate.setMonth(parseInt(e.target.value));
+      selectedDay = null;
+      render();
+      loadEvents(currentDate.getFullYear(), currentDate.getMonth());
+    });
+
+    container.querySelector('#cal-year-select')?.addEventListener('change', (e) => {
+      currentDate.setFullYear(parseInt(e.target.value));
+      selectedDay = null;
+      render();
+      loadEvents(currentDate.getFullYear(), currentDate.getMonth());
+    });
 
     container.querySelectorAll('.cal-cell[data-day]').forEach(cell => {
       cell.addEventListener('click', () => {
