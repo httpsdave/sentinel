@@ -837,7 +837,7 @@ a:hover { text-decoration: underline; }
 .cal-dot-political { background: #ffa726; }
 .cal-dot-cultural { background: #4fc3f7; }
 .cal-dot-sports { background: #66bb6a; }
-.cal-dot-observance { background: var(--text-xmuted); }
+.cal-dot-observance { background: #80cbc4; }
 
 /* Calendar Detail Panel */
 .cal-detail {

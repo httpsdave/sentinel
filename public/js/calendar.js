@@ -163,6 +163,7 @@ const Calendar = (() => {
         <div class="cal-legend">
           <span class="cal-legend-item"><span class="cal-dot cal-dot-holiday"></span> Holiday</span>
           <span class="cal-legend-item"><span class="cal-dot cal-dot-religious"></span> Religious</span>
+          <span class="cal-legend-item"><span class="cal-dot cal-dot-observance"></span> Observance</span>
           <span class="cal-legend-item"><span class="cal-dot cal-dot-election"></span> Election</span>
           <span class="cal-legend-item"><span class="cal-dot cal-dot-political"></span> Political</span>
           <span class="cal-legend-item"><span class="cal-dot cal-dot-cultural"></span> Cultural</span>

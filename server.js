@@ -1072,73 +1072,250 @@ app.get('/api/status', (_req, res) => {
    ═══════════════════════════════════════════════════ */
 
 /* ── Confirmed World Events ─────────────────────── */
+/* ── Confirmed World Events — comprehensive list ── */
+/* Covers: observances, religious, cultural, political,
+   elections, sports, awareness days, and more.
+   Fixed-date events use static entries; lunar/variable
+   dates are fetched from APIs or computed. */
+
 const WORLD_EVENTS = [
-  // ── 2025 ──
+  // ═══════════════════════════════════════════════════
+  //  2024 — RECENT / HISTORICAL
+  // ═══════════════════════════════════════════════════
+  { date: '2024-02-14', name: 'Valentine\'s Day', type: 'observance', description: 'Day of love celebrated worldwide' },
+  { date: '2024-03-08', name: 'International Women\'s Day', type: 'observance', description: 'UN-recognized day celebrating women\'s achievements' },
+  { date: '2024-03-31', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2024-04-22', name: 'Earth Day', type: 'observance', description: 'Global environmental awareness day' },
+  { date: '2024-05-12', name: 'Mother\'s Day (US/CA/AU)', type: 'observance', description: 'Celebration of mothers — 2nd Sunday of May' },
+  { date: '2024-06-16', name: 'Father\'s Day (US/CA/UK)', type: 'observance', description: 'Celebration of fathers — 3rd Sunday of June' },
+  { date: '2024-06-28', name: 'Pride Month Ends', type: 'observance', description: 'LGBTQ+ Pride Month celebrated throughout June' },
+  { date: '2024-07-26', name: 'Paris 2024 Olympics Opening', type: 'sports', description: 'XXXIII Olympic Games opened in Paris, France', country: 'FR' },
+  { date: '2024-08-11', name: 'Paris 2024 Olympics Closing', type: 'sports', description: 'XXXIII Olympic Games closing ceremony', country: 'FR' },
+  { date: '2024-10-31', name: 'Halloween', type: 'observance', description: 'Celebrated in US, Canada, UK, Ireland, and more' },
+  { date: '2024-11-05', name: 'US Presidential Election 2024', type: 'election', description: 'Donald Trump elected as 47th President of the United States', country: 'US' },
+  { date: '2024-11-28', name: 'Thanksgiving (US)', type: 'holiday', description: 'American Thanksgiving — 4th Thursday of November', country: 'US' },
+  { date: '2024-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2024-12-26', name: 'Hanukkah Begins', type: 'religious', description: 'Jewish Festival of Lights (8 days)' },
+  { date: '2024-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
+
+  // ═══════════════════════════════════════════════════
+  //  2025
+  // ═══════════════════════════════════════════════════
+  // ── January ──
   { date: '2025-01-01', name: 'New Year\'s Day', type: 'holiday', description: 'Worldwide celebration' },
+  { date: '2025-01-20', name: 'US Presidential Inauguration', type: 'political', description: 'Inauguration of the 47th President of the United States', country: 'US' },
+  { date: '2025-01-26', name: 'Republic Day (India)', type: 'holiday', description: 'Indian national day celebrating the constitution', country: 'IN' },
+  { date: '2025-01-27', name: 'Holocaust Remembrance Day', type: 'observance', description: 'International Day of Commemoration (UN)' },
   { date: '2025-01-29', name: 'Chinese New Year (Year of the Snake)', type: 'cultural', description: 'Lunar New Year celebrated across East & Southeast Asia' },
-  { date: '2025-02-28', name: 'Ramadan Begins (approx.)', type: 'religious', description: 'Islamic holy month of fasting — dates shift yearly by lunar calendar' },
-  { date: '2025-03-30', name: 'Eid al-Fitr (approx.)', type: 'religious', description: 'End of Ramadan celebrations' },
+
+  // ── February ──
+  { date: '2025-02-01', name: 'Black History Month Begins (US/CA)', type: 'observance', description: 'Month honoring African American history and achievements' },
+  { date: '2025-02-02', name: 'Groundhog Day', type: 'observance', description: 'North American tradition', country: 'US' },
+  { date: '2025-02-12', name: 'Germany Federal Election', type: 'election', description: 'German federal parliamentary election (Bundestag)', country: 'DE' },
+  { date: '2025-02-14', name: 'Valentine\'s Day', type: 'observance', description: 'Day of love celebrated worldwide' },
+
+  // ── March ──
+  { date: '2025-02-28', name: 'Ramadan Begins', type: 'religious', description: 'Islamic holy month of fasting' },
+  { date: '2025-03-08', name: 'International Women\'s Day', type: 'observance', description: 'UN-recognized day celebrating women\'s achievements' },
+  { date: '2025-03-14', name: 'Pi Day', type: 'observance', description: 'Mathematics celebration (3.14)' },
+  { date: '2025-03-17', name: 'St. Patrick\'s Day', type: 'observance', description: 'Irish cultural & religious celebration, celebrated worldwide' },
+  { date: '2025-03-20', name: 'Spring Equinox', type: 'observance', description: 'First day of spring in Northern Hemisphere' },
+  { date: '2025-03-30', name: 'Eid al-Fitr', type: 'religious', description: 'End of Ramadan celebrations' },
+
+  // ── April ──
+  { date: '2025-04-01', name: 'April Fools\' Day', type: 'observance', description: 'Day of practical jokes celebrated worldwide' },
   { date: '2025-04-13', name: 'Songkran (Thai New Year)', type: 'cultural', description: 'Thai water festival and New Year celebration' },
   { date: '2025-04-20', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2025-04-22', name: 'Earth Day', type: 'observance', description: 'Global environmental awareness day' },
+  { date: '2025-04-25', name: 'ANZAC Day', type: 'holiday', description: 'Remembrance day in Australia and New Zealand', country: 'AU' },
+
+  // ── May ──
+  { date: '2025-05-01', name: 'International Workers\' Day', type: 'observance', description: 'Labour Day celebrated in most countries worldwide' },
+  { date: '2025-05-04', name: 'Star Wars Day', type: 'observance', description: 'May the 4th be with you — pop culture celebration' },
+  { date: '2025-05-05', name: 'Cinco de Mayo', type: 'cultural', description: 'Mexican heritage celebration', country: 'MX' },
+  { date: '2025-05-05', name: 'Canada Federal Election', type: 'election', description: 'Canadian federal general election', country: 'CA' },
+  { date: '2025-05-11', name: 'Mother\'s Day (US/CA/AU)', type: 'observance', description: 'Celebration of mothers — 2nd Sunday of May' },
   { date: '2025-05-12', name: 'Philippines Mid-term Elections', type: 'election', description: 'Senatorial and local elections in the Philippines', country: 'PH' },
-  { date: '2025-06-06', name: 'Eid al-Adha (approx.)', type: 'religious', description: 'Islamic Festival of Sacrifice' },
-  { date: '2025-06-26', name: 'Islamic New Year (approx.)', type: 'religious', description: 'Start of new Islamic calendar year' },
+  { date: '2025-05-25', name: 'Africa Day', type: 'observance', description: 'Anniversary of founding of Organisation of African Unity' },
+
+  // ── June ──
+  { date: '2025-06-01', name: 'Pride Month Begins', type: 'observance', description: 'LGBTQ+ Pride celebrated throughout June worldwide' },
+  { date: '2025-06-05', name: 'World Environment Day', type: 'observance', description: 'UN day for environmental awareness' },
+  { date: '2025-06-06', name: 'Eid al-Adha', type: 'religious', description: 'Islamic Festival of Sacrifice' },
+  { date: '2025-06-15', name: 'Father\'s Day (US/CA/UK)', type: 'observance', description: 'Celebration of fathers — 3rd Sunday of June' },
+  { date: '2025-06-19', name: 'Juneteenth', type: 'holiday', description: 'US federal holiday commemorating emancipation', country: 'US' },
+  { date: '2025-06-20', name: 'World Refugee Day', type: 'observance', description: 'UN day honouring refugees worldwide' },
+  { date: '2025-06-21', name: 'Summer Solstice', type: 'observance', description: 'Longest day of the year in Northern Hemisphere' },
+  { date: '2025-06-26', name: 'Islamic New Year', type: 'religious', description: 'Start of new Islamic calendar year (1447 AH)' },
+
+  // ── July ──
   { date: '2025-07-01', name: 'Canada Day', type: 'holiday', description: 'Canadian national holiday', country: 'CA' },
   { date: '2025-07-04', name: 'US Independence Day', type: 'holiday', description: 'American national holiday', country: 'US' },
+  { date: '2025-07-04', name: 'UK General Election Expected', type: 'election', description: 'Expected date for next UK general election', country: 'GB' },
   { date: '2025-07-14', name: 'Bastille Day', type: 'holiday', description: 'French national holiday', country: 'FR' },
+
+  // ── August ──
+  { date: '2025-08-09', name: 'International Day of Indigenous Peoples', type: 'observance', description: 'UN observance day' },
   { date: '2025-08-15', name: 'Indian Independence Day', type: 'holiday', description: 'India\'s national day', country: 'IN' },
-  { date: '2025-09-05', name: 'Prophet\'s Birthday (Mawlid) (approx.)', type: 'religious', description: 'Celebration of Prophet Muhammad\'s birth' },
-  { date: '2025-09-22', name: 'Rosh Hashanah (Jewish New Year)', type: 'religious', description: 'Jewish New Year celebration' },
-  { date: '2025-10-01', name: 'Yom Kippur', type: 'religious', description: 'Jewish Day of Atonement' },
-  { date: '2025-10-02', name: 'China National Day', type: 'holiday', description: 'People\'s Republic of China founding anniversary', country: 'CN' },
+  { date: '2025-08-15', name: 'Assumption of Mary', type: 'religious', description: 'Catholic feast day, public holiday in many countries' },
+
+  // ── September ──
+  { date: '2025-09-01', name: 'Labor Day (US/CA)', type: 'holiday', description: '1st Monday of September', country: 'US' },
+  { date: '2025-09-05', name: 'Prophet\'s Birthday (Mawlid)', type: 'religious', description: 'Celebration of Prophet Muhammad\'s birth' },
+  { date: '2025-09-16', name: 'Mexican Independence Day', type: 'holiday', description: 'Mexico\'s national day', country: 'MX' },
+  { date: '2025-09-21', name: 'International Day of Peace', type: 'observance', description: 'UN day dedicated to world peace' },
+  { date: '2025-09-22', name: 'Rosh Hashanah (Jewish New Year)', type: 'religious', description: 'Jewish New Year celebration — begins at sundown' },
+  { date: '2025-09-22', name: 'Autumn Equinox', type: 'observance', description: 'First day of fall in Northern Hemisphere' },
+
+  // ── October ──
+  { date: '2025-10-01', name: 'Yom Kippur', type: 'religious', description: 'Jewish Day of Atonement — holiest day of the year' },
+  { date: '2025-10-01', name: 'China National Day', type: 'holiday', description: 'PRC founding anniversary — Golden Week begins', country: 'CN' },
+  { date: '2025-10-06', name: 'Sukkot Begins', type: 'religious', description: 'Jewish Feast of Tabernacles (7 days)' },
+  { date: '2025-10-13', name: 'Thanksgiving (Canada)', type: 'holiday', description: '2nd Monday of October', country: 'CA' },
   { date: '2025-10-20', name: 'Diwali', type: 'religious', description: 'Hindu festival of lights celebrated across South Asia' },
+  { date: '2025-10-24', name: 'United Nations Day', type: 'observance', description: 'Anniversary of the UN Charter coming into force' },
+  { date: '2025-10-31', name: 'Halloween', type: 'observance', description: 'Celebrated in US, Canada, UK, Ireland, and more' },
+
+  // ── November ──
+  { date: '2025-11-01', name: 'All Saints\' Day', type: 'religious', description: 'Christian observance, public holiday in many European countries' },
+  { date: '2025-11-02', name: 'Day of the Dead (Día de los Muertos)', type: 'cultural', description: 'Mexican tradition honoring deceased loved ones', country: 'MX' },
   { date: '2025-11-11', name: 'Veterans Day / Remembrance Day', type: 'holiday', description: 'Honoring military veterans (US, UK, CA, AU)' },
+  { date: '2025-11-27', name: 'Thanksgiving (US)', type: 'holiday', description: '4th Thursday of November', country: 'US' },
+  { date: '2025-11-28', name: 'Black Friday', type: 'observance', description: 'Biggest shopping day in the US', country: 'US' },
+
+  // ── December ──
+  { date: '2025-12-01', name: 'World AIDS Day', type: 'observance', description: 'Global awareness and remembrance day' },
+  { date: '2025-12-10', name: 'Human Rights Day', type: 'observance', description: 'UN day marking Universal Declaration of Human Rights' },
+  { date: '2025-12-14', name: 'Hanukkah Begins', type: 'religious', description: 'Jewish Festival of Lights (8 days) — begins at sundown' },
+  { date: '2025-12-21', name: 'Winter Solstice', type: 'observance', description: 'Shortest day of the year in Northern Hemisphere' },
+  { date: '2025-12-24', name: 'Christmas Eve', type: 'religious', description: 'Celebrated worldwide, main celebration in many countries' },
   { date: '2025-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2025-12-26', name: 'Boxing Day', type: 'holiday', description: 'Public holiday in UK, Canada, Australia, and more' },
   { date: '2025-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
 
-  // ── 2026 ──
+  // ═══════════════════════════════════════════════════
+  //  2026
+  // ═══════════════════════════════════════════════════
+  // ── January ──
   { date: '2026-01-01', name: 'New Year\'s Day', type: 'holiday', description: 'Worldwide celebration' },
+  { date: '2026-01-06', name: 'Epiphany / Three Kings Day', type: 'religious', description: 'Christian observance, public holiday in many European & Latin American countries' },
+  { date: '2026-01-26', name: 'Australia Day', type: 'holiday', description: 'Australian national day', country: 'AU' },
+  { date: '2026-01-26', name: 'Republic Day (India)', type: 'holiday', description: 'Indian national day celebrating the constitution', country: 'IN' },
+  { date: '2026-01-27', name: 'Holocaust Remembrance Day', type: 'observance', description: 'International Day of Commemoration (UN)' },
+
+  // ── February ──
+  { date: '2026-02-01', name: 'Black History Month Begins (US/CA)', type: 'observance', description: 'Month honoring African American history and achievements' },
+  { date: '2026-02-02', name: 'Groundhog Day', type: 'observance', description: 'North American tradition', country: 'US' },
+  { date: '2026-02-14', name: 'Valentine\'s Day', type: 'observance', description: 'Day of love celebrated worldwide' },
   { date: '2026-02-17', name: 'Chinese New Year (Year of the Horse)', type: 'cultural', description: 'Lunar New Year celebrated across East & Southeast Asia' },
-  { date: '2026-02-17', name: 'Ramadan Begins (approx.)', type: 'religious', description: 'Islamic holy month of fasting' },
-  { date: '2026-03-20', name: 'Eid al-Fitr (approx.)', type: 'religious', description: 'End of Ramadan celebrations' },
+
+  // ── March ──
+  { date: '2026-03-01', name: 'St. David\'s Day (Wales)', type: 'observance', description: 'Welsh national day', country: 'GB' },
+  { date: '2026-03-03', name: 'Hinamatsuri (Girls\' Day, Japan)', type: 'cultural', description: 'Japanese doll festival', country: 'JP' },
+  { date: '2026-03-08', name: 'International Women\'s Day', type: 'observance', description: 'UN-recognized day celebrating women\'s achievements' },
+  { date: '2026-03-14', name: 'Pi Day', type: 'observance', description: 'Mathematics celebration (3.14)' },
+  { date: '2026-03-17', name: 'St. Patrick\'s Day', type: 'observance', description: 'Irish cultural & religious celebration, celebrated worldwide' },
+  { date: '2026-03-20', name: 'Nowruz (Persian New Year)', type: 'cultural', description: 'Spring equinox new year — celebrated in Iran, Afghanistan, Central Asia' },
+  { date: '2026-03-20', name: 'Spring Equinox', type: 'observance', description: 'First day of spring in Northern Hemisphere' },
+  { date: '2026-03-22', name: 'World Water Day', type: 'observance', description: 'UN day to focus on importance of freshwater' },
+  { date: '2026-03-29', name: 'Holi', type: 'religious', description: 'Hindu festival of colors celebrated in India and Nepal' },
+
+  // ── April ──
+  { date: '2026-04-01', name: 'April Fools\' Day', type: 'observance', description: 'Day of practical jokes celebrated worldwide' },
+  { date: '2026-04-03', name: 'Good Friday', type: 'religious', description: 'Christian observance before Easter' },
   { date: '2026-04-05', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
-  { date: '2026-04-13', name: 'Songkran (Thai New Year)', type: 'cultural', description: 'Thai water festival and New Year celebration' },
-  { date: '2026-05-26', name: 'Eid al-Adha (approx.)', type: 'religious', description: 'Islamic Festival of Sacrifice' },
+  { date: '2026-04-13', name: 'Songkran (Thai New Year)', type: 'cultural', description: 'Thai water festival and New Year celebration (Apr 13–15)' },
+  { date: '2026-04-22', name: 'Earth Day', type: 'observance', description: 'Global environmental awareness day' },
+  { date: '2026-04-25', name: 'ANZAC Day', type: 'holiday', description: 'Remembrance day in Australia and New Zealand', country: 'AU' },
+
+  // ── May ──
+  { date: '2026-05-01', name: 'International Workers\' Day', type: 'observance', description: 'Labour Day celebrated in most countries worldwide' },
+  { date: '2026-05-04', name: 'Star Wars Day', type: 'observance', description: 'May the 4th be with you — pop culture celebration' },
+  { date: '2026-05-05', name: 'Cinco de Mayo', type: 'cultural', description: 'Mexican heritage celebration', country: 'MX' },
+  { date: '2026-05-05', name: 'Buddha\'s Birthday (Vesak)', type: 'religious', description: 'Buddhist celebration of Buddha\'s birth — date varies by tradition' },
+  { date: '2026-05-10', name: 'Mother\'s Day (US/CA/AU)', type: 'observance', description: 'Celebration of mothers — 2nd Sunday of May' },
+  { date: '2026-05-25', name: 'Africa Day', type: 'observance', description: 'Anniversary of founding of Organisation of African Unity' },
+
+  // ── June ──
+  { date: '2026-06-01', name: 'Pride Month Begins', type: 'observance', description: 'LGBTQ+ Pride celebrated throughout June worldwide' },
+  { date: '2026-06-05', name: 'World Environment Day', type: 'observance', description: 'UN day for environmental awareness' },
   { date: '2026-06-11', name: 'FIFA World Cup 2026 Begins', type: 'sports', description: 'Hosted by US, Canada, and Mexico — biggest sporting event of the year', country: 'US' },
-  { date: '2026-07-19', name: 'FIFA World Cup 2026 Final', type: 'sports', description: 'World Cup Final — MetLife Stadium, New Jersey', country: 'US' },
+  { date: '2026-06-19', name: 'Juneteenth', type: 'holiday', description: 'US federal holiday commemorating emancipation', country: 'US' },
+  { date: '2026-06-20', name: 'World Refugee Day', type: 'observance', description: 'UN day honouring refugees worldwide' },
+  { date: '2026-06-21', name: 'Father\'s Day (US/CA/UK)', type: 'observance', description: 'Celebration of fathers — 3rd Sunday of June' },
+  { date: '2026-06-21', name: 'Summer Solstice', type: 'observance', description: 'Longest day of the year in Northern Hemisphere' },
+
+  // ── July ──
   { date: '2026-07-01', name: 'Canada Day', type: 'holiday', description: 'Canadian national holiday', country: 'CA' },
   { date: '2026-07-04', name: 'US Independence Day', type: 'holiday', description: 'American national holiday', country: 'US' },
   { date: '2026-07-14', name: 'Bastille Day', type: 'holiday', description: 'French national holiday', country: 'FR' },
+  { date: '2026-07-19', name: 'FIFA World Cup 2026 Final', type: 'sports', description: 'World Cup Final — MetLife Stadium, New Jersey', country: 'US' },
+
+  // ── August ──
+  { date: '2026-08-09', name: 'International Day of Indigenous Peoples', type: 'observance', description: 'UN observance day' },
   { date: '2026-08-15', name: 'Indian Independence Day', type: 'holiday', description: 'India\'s national day', country: 'IN' },
-  { date: '2026-09-12', name: 'Rosh Hashanah (Jewish New Year)', type: 'religious', description: 'Jewish New Year celebration' },
-  { date: '2026-09-21', name: 'Yom Kippur', type: 'religious', description: 'Jewish Day of Atonement' },
-  { date: '2026-10-01', name: 'China National Day', type: 'holiday', description: 'People\'s Republic of China founding anniversary', country: 'CN' },
+  { date: '2026-08-15', name: 'Assumption of Mary', type: 'religious', description: 'Catholic feast day, public holiday in many countries' },
+
+  // ── September ──
+  { date: '2026-09-07', name: 'Labor Day (US/CA)', type: 'holiday', description: '1st Monday of September', country: 'US' },
+  { date: '2026-09-12', name: 'Rosh Hashanah (Jewish New Year)', type: 'religious', description: 'Jewish New Year celebration — begins at sundown' },
+  { date: '2026-09-16', name: 'Mexican Independence Day', type: 'holiday', description: 'Mexico\'s national day', country: 'MX' },
+  { date: '2026-09-21', name: 'International Day of Peace', type: 'observance', description: 'UN day dedicated to world peace' },
+  { date: '2026-09-21', name: 'Yom Kippur', type: 'religious', description: 'Jewish Day of Atonement — holiest day of the year' },
+  { date: '2026-09-22', name: 'Autumn Equinox', type: 'observance', description: 'First day of fall in Northern Hemisphere' },
+  { date: '2026-09-26', name: 'Sukkot Begins', type: 'religious', description: 'Jewish Feast of Tabernacles (7 days)' },
+
+  // ── October ──
+  { date: '2026-10-01', name: 'China National Day', type: 'holiday', description: 'PRC founding anniversary — Golden Week begins', country: 'CN' },
   { date: '2026-10-09', name: 'Diwali', type: 'religious', description: 'Hindu festival of lights celebrated across South Asia' },
+  { date: '2026-10-12', name: 'Thanksgiving (Canada)', type: 'holiday', description: '2nd Monday of October', country: 'CA' },
+  { date: '2026-10-24', name: 'United Nations Day', type: 'observance', description: 'Anniversary of the UN Charter coming into force' },
+  { date: '2026-10-31', name: 'Halloween', type: 'observance', description: 'Celebrated in US, Canada, UK, Ireland, and more' },
+
+  // ── November ──
+  { date: '2026-11-01', name: 'All Saints\' Day', type: 'religious', description: 'Christian observance, public holiday in many European countries' },
+  { date: '2026-11-02', name: 'Day of the Dead (Día de los Muertos)', type: 'cultural', description: 'Mexican tradition honoring deceased loved ones', country: 'MX' },
   { date: '2026-11-03', name: 'US Midterm Elections', type: 'election', description: 'Congressional midterm elections across the United States', country: 'US' },
   { date: '2026-11-11', name: 'Veterans Day / Remembrance Day', type: 'holiday', description: 'Honoring military veterans (US, UK, CA, AU)' },
+  { date: '2026-11-26', name: 'Thanksgiving (US)', type: 'holiday', description: '4th Thursday of November', country: 'US' },
+  { date: '2026-11-27', name: 'Black Friday', type: 'observance', description: 'Biggest shopping day in the US', country: 'US' },
+
+  // ── December ──
+  { date: '2026-12-01', name: 'World AIDS Day', type: 'observance', description: 'Global awareness and remembrance day' },
+  { date: '2026-12-10', name: 'Human Rights Day', type: 'observance', description: 'UN day marking Universal Declaration of Human Rights' },
+  { date: '2026-12-21', name: 'Winter Solstice', type: 'observance', description: 'Shortest day of the year in Northern Hemisphere' },
+  { date: '2026-12-24', name: 'Christmas Eve', type: 'religious', description: 'Celebrated worldwide, main celebration in many countries' },
   { date: '2026-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
+  { date: '2026-12-26', name: 'Boxing Day', type: 'holiday', description: 'Public holiday in UK, Canada, Australia, and more' },
+  { date: '2026-12-26', name: 'Kwanzaa Begins', type: 'cultural', description: 'African American cultural celebration (Dec 26 – Jan 1)' },
   { date: '2026-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
 
-  // ── 2027 ──
+  // ═══════════════════════════════════════════════════
+  //  2027
+  // ═══════════════════════════════════════════════════
   { date: '2027-01-01', name: 'New Year\'s Day', type: 'holiday', description: 'Worldwide celebration' },
+  { date: '2027-01-26', name: 'Republic Day (India)', type: 'holiday', description: 'Indian national day', country: 'IN' },
   { date: '2027-02-06', name: 'Chinese New Year (Year of the Goat)', type: 'cultural', description: 'Lunar New Year celebrated across East & Southeast Asia' },
-  { date: '2027-02-07', name: 'Ramadan Begins (approx.)', type: 'religious', description: 'Islamic holy month of fasting' },
-  { date: '2027-03-09', name: 'Eid al-Fitr (approx.)', type: 'religious', description: 'End of Ramadan celebrations' },
+  { date: '2027-02-14', name: 'Valentine\'s Day', type: 'observance', description: 'Day of love celebrated worldwide' },
+  { date: '2027-03-08', name: 'International Women\'s Day', type: 'observance', description: 'UN-recognized day celebrating women\'s achievements' },
+  { date: '2027-03-17', name: 'St. Patrick\'s Day', type: 'observance', description: 'Irish cultural & religious celebration' },
+  { date: '2027-03-21', name: 'Nowruz (Persian New Year)', type: 'cultural', description: 'Celebrated in Iran, Afghanistan, Central Asia' },
   { date: '2027-03-28', name: 'Easter Sunday', type: 'religious', description: 'Christian celebration worldwide' },
-  { date: '2027-05-15', name: 'Eid al-Adha (approx.)', type: 'religious', description: 'Islamic Festival of Sacrifice' },
+  { date: '2027-04-22', name: 'Earth Day', type: 'observance', description: 'Global environmental awareness day' },
+  { date: '2027-05-01', name: 'International Workers\' Day', type: 'observance', description: 'Labour Day celebrated in most countries worldwide' },
   { date: '2027-05-09', name: 'Philippines Presidential Election', type: 'election', description: 'National elections for president, VP, senators, and local officials', country: 'PH' },
+  { date: '2027-05-09', name: 'Mother\'s Day (US/CA/AU)', type: 'observance', description: 'Celebration of mothers' },
+  { date: '2027-06-20', name: 'Father\'s Day (US/CA/UK)', type: 'observance', description: 'Celebration of fathers' },
+  { date: '2027-07-01', name: 'Canada Day', type: 'holiday', description: 'Canadian national holiday', country: 'CA' },
+  { date: '2027-07-04', name: 'US Independence Day', type: 'holiday', description: 'American national holiday', country: 'US' },
+  { date: '2027-07-14', name: 'Bastille Day', type: 'holiday', description: 'French national holiday', country: 'FR' },
+  { date: '2027-08-15', name: 'Indian Independence Day', type: 'holiday', description: 'India\'s national day', country: 'IN' },
   { date: '2027-10-29', name: 'Diwali', type: 'religious', description: 'Hindu festival of lights celebrated across South Asia' },
+  { date: '2027-10-31', name: 'Halloween', type: 'observance', description: 'Celebrated in US, Canada, UK, Ireland, and more' },
+  { date: '2027-11-11', name: 'Veterans Day / Remembrance Day', type: 'holiday', description: 'Honoring military veterans' },
+  { date: '2027-11-25', name: 'Thanksgiving (US)', type: 'holiday', description: '4th Thursday of November', country: 'US' },
   { date: '2027-12-25', name: 'Christmas Day', type: 'religious', description: 'Christian celebration worldwide' },
   { date: '2027-12-31', name: 'New Year\'s Eve', type: 'holiday', description: 'Worldwide celebration' },
-
-  // ── Recent / Historical events (2024-2025) ──
-  { date: '2024-11-05', name: 'US Presidential Election 2024', type: 'election', description: 'Donald Trump elected as 47th President of the United States', country: 'US' },
-  { date: '2024-07-26', name: 'Paris 2024 Olympics Opening', type: 'sports', description: 'XXXIII Olympic Games opened in Paris, France', country: 'FR' },
-  { date: '2024-08-11', name: 'Paris 2024 Olympics Closing', type: 'sports', description: 'XXXIII Olympic Games closing ceremony', country: 'FR' },
-  { date: '2025-01-20', name: 'US Presidential Inauguration', type: 'political', description: 'Inauguration of the 47th President of the United States', country: 'US' },
-  { date: '2025-02-12', name: 'Germany Federal Election', type: 'election', description: 'German federal parliamentary election (Bundestag)', country: 'DE' },
-  { date: '2025-05-05', name: 'Canada Federal Election', type: 'election', description: 'Canadian federal general election', country: 'CA' },
-  { date: '2025-07-04', name: 'UK General Election Expected', type: 'election', description: 'Expected date for next UK general election', country: 'GB' },
 ];
 
 async function _fetchHolidays(year, countryCode) {
@@ -1168,14 +1345,93 @@ async function _fetchHolidays(year, countryCode) {
   }
 }
 
+/* ── AlAdhan Islamic Calendar API (free, no auth) ── */
+/* Fetches accurate Islamic holidays with Gregorian dates */
+async function _fetchIslamicHolidays(gregorianYear) {
+  const ck = `islamic:${gregorianYear}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  // Major Islamic holidays to surface (filter out obscure saints' urs)
+  const MAJOR_KEYWORDS = [
+    'ramadan', 'eid', 'ashura', 'mawlid', 'isra', 'mi\'raj', 'miraj',
+    'laylat', 'shab-e', 'new year', 'muharram', 'rajab', 'shaban',
+    'hajj', 'arafa', 'arafat', 'prophet', 'veiling'
+  ];
+
+  function isMajor(name) {
+    const lower = name.toLowerCase();
+    return MAJOR_KEYWORDS.some(kw => lower.includes(kw));
+  }
+
+  try {
+    // The Hijri year overlapping a Gregorian year — approximate
+    const hijriYear = Math.round(gregorianYear - 622 + (gregorianYear - 622) / 33);
+    const results = [];
+
+    // Try two Hijri years to cover the full Gregorian year
+    for (const hy of [hijriYear, hijriYear + 1]) {
+      try {
+        const url = `https://api.aladhan.com/v1/islamicHolidaysByHijriYear/${hy}`;
+        const resp = await httpGet(url);
+        if (resp && resp.data && Array.isArray(resp.data)) {
+          for (const entry of resp.data) {
+            const greg = entry.gregorian;
+            const hijri = entry.hijri;
+            if (!greg || !greg.date || !hijri) continue;
+
+            // Parse DD-MM-YYYY → YYYY-MM-DD
+            const parts = greg.date.split('-');
+            if (parts.length !== 3) continue;
+            const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (!isoDate.startsWith(String(gregorianYear))) continue;
+
+            // Get holiday names from the entry
+            const holidays = hijri.holidays || [];
+            for (const hName of holidays) {
+              if (!isMajor(hName)) continue; // Skip obscure entries
+              results.push({
+                date: isoDate,
+                name: hName,
+                type: 'religious',
+                description: `Islamic calendar — ${hijri.day} ${hijri.month?.en || ''} ${hijri.year} AH`
+              });
+            }
+          }
+        }
+      } catch (e) {
+        // One Hijri year fetch failed, continue with the other
+      }
+    }
+
+    // Deduplicate by date+name
+    const seen = new Set();
+    const unique = results.filter(r => {
+      const k = r.date + '|' + r.name;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+
+    setCache(ck, unique);
+    return unique;
+  } catch (err) {
+    console.error('[ISLAMIC]', err.message);
+    return [];
+  }
+}
+
 app.get('/api/events', async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
     const month = parseInt(req.query.month) || (new Date().getMonth() + 1);
     const country = (req.query.country || 'US').toUpperCase();
 
-    // Fetch public holidays from Nager.Date
-    const holidays = await _fetchHolidays(year, country);
+    // Fetch from all sources in parallel
+    const [holidays, islamicHolidays] = await Promise.all([
+      _fetchHolidays(year, country),
+      _fetchIslamicHolidays(year)
+    ]);
 
     // Filter world events for the requested year
     const worldFiltered = WORLD_EVENTS.filter(ev => {
@@ -1183,8 +1439,10 @@ app.get('/api/events', async (req, res) => {
       return d.getFullYear() === year;
     });
 
-    // Merge — holidays + world events, deduplicate by date+name
-    const allEvents = [...holidays, ...worldFiltered];
+    // Merge all sources — holidays + islamic + world events
+    const allEvents = [...holidays, ...islamicHolidays, ...worldFiltered];
+
+    // Deduplicate by date + normalized name
     const seen = new Set();
     const unique = allEvents.filter(ev => {
       const key = ev.date + '|' + ev.name.toLowerCase().replace(/[^a-z]/g, '').substring(0, 30);
