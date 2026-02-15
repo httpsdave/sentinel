@@ -571,7 +571,7 @@ const App = (() => {
     const el = document.getElementById('interest-chart');
     if (!el) return;
     const total = Object.values(data).reduce((s, v) => s + v, 0) || 1;
-    const cats = ['technology','politics','science','business','entertainment','sports','world','general'];
+    const cats = ['technology','politics','science','business','entertainment','sports','esports','world','general'];
 
     el.innerHTML = cats.map(cat => {
       const pct = Math.round((data[cat] || 0) / total * 100);

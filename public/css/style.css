@@ -452,17 +452,19 @@ a:hover { text-decoration: underline; }
 }
 #filter-bar::-webkit-scrollbar { display: none; }
 
-.filters { display: flex; gap: 2px; flex-shrink: 0; }
+.filters { display: flex; gap: 1px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
 
 .filter-btn {
   background: none;
   border: 1px solid transparent;
   color: var(--text-xmuted);
-  padding: 6px 14px;
-  font: 15px/1 var(--font);
+  padding: 6px 12px;
+  font: 14px/1 var(--font);
   cursor: pointer;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.1s;
 }
 .filter-btn:hover { color: var(--text-muted); }
@@ -472,7 +474,8 @@ a:hover { text-decoration: underline; }
   background: var(--green-subtle);
 }
 
-.source-filters { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.source-filters { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; max-width: 50%; overflow-x: auto; scrollbar-width: none; }
+.source-filters::-webkit-scrollbar { display: none; }
 
 .sort-control {
   flex-shrink: 0;
@@ -501,13 +504,14 @@ a:hover { text-decoration: underline; }
 
 .source-toggle {
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: 12px;
   cursor: pointer;
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; gap: 3px;
   white-space: nowrap;
   user-select: none;
+  flex-shrink: 0;
 }
-.source-toggle input { accent-color: var(--green); width: 16px; height: 16px; }
+.source-toggle input { accent-color: var(--green); width: 14px; height: 14px; }
 
 /* ── MAIN CONTENT ──────────────────────────────────── */
 #main {
@@ -2000,15 +2004,39 @@ kbd {
   .search-box input { width: 160px; font-size: 14px; }
   .icon-btn { width: 36px; height: 36px; font-size: 18px; }
   #mute-btn { display: none; }
+  
+  /* Wrap filter bar to give categories full width */
+  #filter-bar { flex-wrap: wrap; gap: 3px; padding: 3px 8px; }
+  .filters { width: 100%; order: 1; gap: 1px; }
+  .sort-control { order: 2; }
+  .source-filters { order: 3; max-width: 100%; gap: 4px; }
+  
+  .filter-btn { padding: 4px 8px; font-size: 12px; letter-spacing: 0.3px; }
 }
 
 /* Narrow half-screen — compact everything further */
 @media (max-width: 920px) {
+  :root { --filter-h: 58px; }
   .logo { font-size: 18px; letter-spacing: 1px; }
   .nav-btn { padding: 8px 10px; font-size: 13px; }
   .search-box input { width: 120px; font-size: 13px; padding: 6px 10px; }
   .icon-btn { width: 34px; height: 34px; font-size: 16px; }
   #refresh-btn { display: none; }
+  #filter-bar { gap: 2px; padding: 2px 6px; }
+  .filter-btn { padding: 3px 6px; font-size: 11px; letter-spacing: 0; }
+  .source-filters { gap: 3px; }
+  .source-toggle { font-size: 10px; gap: 2px; }
+  .source-toggle input { width: 11px; height: 11px; }
+  
+  /* Use abbreviated text for categories */
+  .filter-btn:not(.filter-local)::before { content: attr(data-short); }
+  .filter-btn:not(.filter-local) { font-size: 0; }
+  .filter-btn:not(.filter-local)::before { font-size: 11px; }
+  
+  /* Hide less critical source toggles */
+  .source-toggle:has([data-source="thenewsapi"]),
+  .source-toggle:has([data-source="gnews"]),
+  .source-toggle:has([data-source="newsapi"]) { display: none; }
 }
 
 /* Mobile — hide desktop nav, show bottom nav */

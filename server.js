@@ -90,6 +90,11 @@ const CAT_SUBS = {
     'mma','formula1','tennis','olympics','running','golf'],
   world: ['worldnews','internationalnews','middleeast','asia','africa',
     'india','china','japan','korea','ukraine','europe'],
+  esports: ['esports','leagueoflegends','competitiveoverwatch','valorant',
+    'globaloffensive','dota2','rocketleagueesports','r6proleague',
+    'competitiveapex','smashbros','fgc','competitivetft',
+    'codzombies','codcompetitive','competitivehalo','starcraft',
+    'competitivefortnite','mlbbprofessional'],
   community: ['askreddit','todayilearned','explainlikeimfive','amitheasshole',
     'showerthoughts','unpopularopinion','changemyview','nostupidquestions',
     'tooafraidtoask','tifu','confessions','relationship_advice','trueoffmychest']
@@ -103,6 +108,7 @@ const CAT_KEYWORDS = {
   entertainment: /\b(movie|film|music|game|tv show|actor|actress|album|song|stream|netflix|disney|concert|award|grammy|oscar)\b/i,
   sports: /\b(team|player|game|score|champion|league|cup|match|season|coach|nba|nfl|fifa|goal|win |lost )\b/i,
   world: /\b(war|conflict|bomb|missile|military|troops|refugee|humanitarian|sanction|treaty|border|crisis)\b/i,
+  esports: /\b(esport|e-sport|league of legends|valorant|counter.strike|dota ?2|overwatch.league|rocket.league.champ|LoL|CSGO|CS2|LCS|LEC|LCK|LPL|worlds 20|major 20|VCT|CDL|OWL|RLCS|smash|tekken|street fighter|EVO |FGC|pro player|pro team|tournament|grand final|playoff|scrims|bootcamp|fnatic|t1 |g2 |cloud9|team liquid|100 thieves|sentinels|navi|faze |gen\.?g|drx |loud )\b/i,
   community: /\b(AITA|YTA|NTA|ELI5|TIL |ask reddit|what is|how do|why do|what would|does anyone|am i the|today i learned|explain like)\b/i
 };
 
@@ -128,12 +134,62 @@ app.use(express.json());
    RSS FEEDS  (no auth required)
    ═══════════════════════════════════════════════════ */
 const DEFAULT_FEEDS = [
+  /* ── World / General ─────────────────────────── */
   { url: 'https://feeds.bbci.co.uk/news/rss.xml', name: 'BBC News', cat: 'world' },
-  { url: 'https://rss.cnn.com/rss/edition.rss', name: 'CNN', cat: 'world' },
+  { url: 'https://rss.cnn.com/rss/edition_world.rss', name: 'CNN World', cat: 'world' },
+  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', name: 'NY Times', cat: 'world' },
+  { url: 'https://feeds.npr.org/1001/rss.xml', name: 'NPR News', cat: 'world' },
+  { url: 'https://www.aljazeera.com/xml/rss/all.xml', name: 'Al Jazeera', cat: 'world' },
+  { url: 'https://moxie.foxnews.com/google-publisher/world.xml', name: 'Fox News World', cat: 'world' },
+  { url: 'https://abcnews.go.com/abcnews/topstories', name: 'ABC News', cat: 'world' },
+  { url: 'https://www.independent.co.uk/news/world/rss', name: 'The Independent', cat: 'world' },
+  { url: 'https://www.latimes.com/world-nation/rss2.0.xml', name: 'LA Times', cat: 'world' },
+  { url: 'https://feeds.skynews.com/feeds/rss/world.xml', name: 'Sky News', cat: 'world' },
+  { url: 'https://www.cbsnews.com/latest/rss/main', name: 'CBS News', cat: 'world' },
+  { url: 'https://rss.dw.com/rdf/rss-en-all', name: 'DW News', cat: 'world' },
+  { url: 'https://www.france24.com/en/rss', name: 'France 24', cat: 'world' },
+  /* ── Technology ──────────────────────────────── */
   { url: 'https://techcrunch.com/feed/', name: 'TechCrunch', cat: 'technology' },
   { url: 'https://www.theverge.com/rss/index.xml', name: 'The Verge', cat: 'technology' },
   { url: 'https://feeds.arstechnica.com/arstechnica/index', name: 'Ars Technica', cat: 'technology' },
-  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', name: 'NY Times', cat: 'world' }
+  { url: 'https://www.wired.com/feed/rss', name: 'Wired', cat: 'technology' },
+  { url: 'https://www.techradar.com/rss', name: 'TechRadar', cat: 'technology' },
+  { url: 'https://www.zdnet.com/news/rss.xml', name: 'ZDNet', cat: 'technology' },
+  { url: 'https://9to5google.com/feed/', name: '9to5Google', cat: 'technology' },
+  { url: 'https://9to5mac.com/feed/', name: '9to5Mac', cat: 'technology' },
+  { url: 'https://www.engadget.com/rss.xml', name: 'Engadget', cat: 'technology' },
+  { url: 'https://feeds.feedburner.com/venturebeat/SZYF', name: 'VentureBeat', cat: 'technology' },
+  /* ── Science ─────────────────────────────────── */
+  { url: 'https://www.sciencedaily.com/rss/all.xml', name: 'Science Daily', cat: 'science' },
+  { url: 'https://www.newscientist.com/section/news/feed/', name: 'New Scientist', cat: 'science' },
+  { url: 'https://phys.org/rss-feed/', name: 'Phys.org', cat: 'science' },
+  { url: 'https://www.space.com/feeds/all', name: 'Space.com', cat: 'science' },
+  /* ── Business / Economy ─────────────────────── */
+  { url: 'https://feeds.bloomberg.com/markets/news.rss', name: 'Bloomberg', cat: 'business' },
+  { url: 'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114', name: 'CNBC', cat: 'business' },
+  { url: 'https://fortune.com/feed', name: 'Fortune', cat: 'business' },
+  /* ── Politics ────────────────────────────────── */
+  { url: 'https://thehill.com/feed/', name: 'The Hill', cat: 'politics' },
+  { url: 'https://feeds.feedburner.com/realclearpolitics/qlMj', name: 'RealClearPolitics', cat: 'politics' },
+  /* ── Entertainment / Sports ──────────────────── */
+  { url: 'https://www.cbssports.com/rss/headlines/', name: 'CBS Sports', cat: 'sports' },
+  { url: 'https://variety.com/feed/', name: 'Variety', cat: 'entertainment' },
+  { url: 'https://www.rollingstone.com/feed/', name: 'Rolling Stone', cat: 'entertainment' },
+  /* ── Esports ─────────────────────────────────── */
+  { url: 'https://www.hltv.org/rss/news', name: 'HLTV', cat: 'esports' },
+  { url: 'https://dotesports.com/feed', name: 'Dot Esports', cat: 'esports' },
+  { url: 'https://www.dexerto.com/feed/', name: 'Dexerto', cat: 'esports' },
+  { url: 'https://esportsinsider.com/feed', name: 'Esports Insider', cat: 'esports' },
+  { url: 'https://www.invenglobal.com/rss', name: 'Inven Global', cat: 'esports' },
+  { url: 'https://www.vpesports.com/feed', name: 'VP Esports', cat: 'esports' },
+  /* ── Health ─────────────────────────────────── */
+  { url: 'https://www.livescience.com/feeds/all', name: 'Live Science', cat: 'science' },
+  { url: 'https://www.statnews.com/feed/', name: 'STAT News', cat: 'science' },
+  /* ── World Extra ─────────────────────────────── */
+  { url: 'https://www.cbc.ca/webfeed/rss/rss-topstories', name: 'CBC Canada', cat: 'world' },
+  { url: 'https://feeds.nbcnews.com/nbcnews/public/news', name: 'NBC News', cat: 'world' },
+  { url: 'https://www.theguardian.com/world/rss', name: 'Guardian World RSS', cat: 'world' },
+  { url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', name: 'Times of India', cat: 'world' },
 ];
 
 /* ═══════════════════════════════════════════════════
@@ -186,7 +242,7 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
   if (hit) return hit;
 
   const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&t=${t}&raw_json=1`;
-  const json = await httpGet(url, { 'User-Agent': 'Sentinel/1.0 (news aggregator; compatible)' });
+  const json = await httpGet(url, { 'User-Agent': 'Sentinel/2.0 (by /u/sentinel_news_app; news aggregator platform)' });
 
   if (!json || !json.data || !json.data.children) {
     console.warn(`[REDDIT] Unexpected response shape for r/${subreddit}`);
@@ -307,7 +363,7 @@ async function _fetchRSS() {
     DEFAULT_FEEDS.map(async (f) => {
       try {
         const feed = await rssParser.parseURL(f.url);
-        return (feed.items || []).slice(0, 10).map((item, i) => ({
+        return (feed.items || []).slice(0, 15).map((item, i) => ({
           id: 'rss_' + Buffer.from(item.link || f.url + i).toString('base64').substring(0, 16),
           title: item.title || '',
           url: item.link || '',
@@ -372,6 +428,87 @@ async function _fetchGuardian(section = '', limit = 25) {
     return items;
   } catch (err) {
     console.error('[GUARDIAN]', err.message);
+    return [];
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SPACEFLIGHT NEWS API — Free, no key required
+   https://api.spaceflightnewsapi.net/v4/
+   ═══════════════════════════════════════════════════ */
+async function _fetchSpaceflightNews(limit = 20) {
+  const ck = `snapi:${limit}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    const json = await httpGet(`https://api.spaceflightnewsapi.net/v4/articles/?limit=${limit}&ordering=-published_at`);
+    if (!json || !json.results) return [];
+
+    const items = json.results.map(a => ({
+      id: 'snapi_' + a.id,
+      title: a.title || '',
+      url: a.url || '',
+      permalink: a.url || '',
+      source: 'spaceflightnews',
+      sourceDetail: a.news_site || 'Spaceflight News',
+      score: 0,
+      comments: 0,
+      thumbnail: a.image_url || null,
+      created: a.published_at ? new Date(a.published_at).getTime() : Date.now(),
+      author: '',
+      snippet: (a.summary || '').substring(0, 250),
+      domain: a.news_site || 'spaceflightnewsapi.net',
+      category: guessCategory('science', a.title || '')
+    }));
+
+    setCache(ck, items);
+    return items;
+  } catch (err) {
+    console.error('[SNAPI]', err.message);
+    return [];
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   MEDIASTACK — Free tier: 100 req/month
+   https://mediastack.com
+   ═══════════════════════════════════════════════════ */
+async function _fetchMediastack(countries = 'us', limit = 25) {
+  const key = process.env.MEDIASTACK_KEY;
+  if (!key) return [];
+
+  const ck = `mediastack:${countries}:${limit}`;
+  const hit = cached(ck);
+  if (hit) return hit;
+
+  try {
+    // Mediastack free tier only supports HTTP
+    const url = `http://api.mediastack.com/v1/news?access_key=${key}&countries=${countries}&limit=${limit}&languages=en&sort=published_desc`;
+    const json = await httpGet(url);
+    if (!json || !json.data) return [];
+
+    const items = json.data.map((a, i) => ({
+      id: 'ms_' + Date.now() + '_' + i,
+      title: a.title || '',
+      url: a.url || '',
+      permalink: a.url || '',
+      source: 'mediastack',
+      sourceDetail: a.source || 'Mediastack',
+      score: 0,
+      comments: 0,
+      thumbnail: a.image || null,
+      created: a.published_at ? new Date(a.published_at).getTime() : Date.now(),
+      author: a.author || '',
+      snippet: (a.description || '').substring(0, 250),
+      domain: a.source || '',
+      category: guessCategory(a.category || '', a.title || '')
+    }));
+
+    setCache(ck, items);
+    return items;
+  } catch (err) {
+    console.error('[MEDIASTACK]', err.message);
     return [];
   }
 }
@@ -612,7 +749,7 @@ app.get('/api/comments', async (req, res) => {
     if (source === 'reddit' && permalink) {
       // permalink should be path like /r/technology/comments/abc/title/
       const url = `https://www.reddit.com${permalink}.json?limit=15&depth=2&sort=top`;
-      const data = await httpGet(url, { 'User-Agent': 'Sentinel/1.0 (news aggregator; compatible)' });
+      const data = await httpGet(url, { 'User-Agent': 'Sentinel/2.0 (by /u/sentinel_news_app; news aggregator platform)' });
       const comments = [];
       if (Array.isArray(data) && data[1]?.data?.children) {
         for (const c of data[1].data.children.slice(0, 15)) {
@@ -696,15 +833,17 @@ app.get('/api/feed', async (req, res) => {
     // Non-Reddit sources in parallel
     const theNewsLocale = (country && country !== 'auto') ? country : '';
     const newsCountry = (country && country !== 'auto') ? country : 'us';
-    const [hn, rss, news, guardian, wikinews, thenewsapi, gnews, regionRss] = await Promise.all([
+    const [hn, rss, news, guardian, wikinews, thenewsapi, gnews, regionRss, snapi, mediastack] = await Promise.all([
       _fetchHN('top', 30).catch(e => { console.error('[FEED/HN]', e.message); return []; }),
       _fetchRSS().catch(e => { console.error('[FEED/RSS]', e.message); return []; }),
       _fetchNews('', category || 'general', newsCountry).catch(e => { console.error('[FEED/NEWS]', e.message); return []; }),
-      _fetchGuardian('', 25).catch(e => { console.error('[FEED/GUARDIAN]', e.message); return []; }),
+      _fetchGuardian('', 40).catch(e => { console.error('[FEED/GUARDIAN]', e.message); return []; }),
       _fetchWikinews().catch(e => { console.error('[FEED/WIKINEWS]', e.message); return []; }),
       _fetchTheNewsAPI(theNewsLocale, 'en', 5).catch(e => { console.error('[FEED/THENEWSAPI]', e.message); return []; }),
       _fetchGNews(newsCountry, 'general', 10).catch(e => { console.error('[FEED/GNEWS]', e.message); return []; }),
       _fetchRegionRSS(country).catch(e => { console.error('[FEED/REGIONRSS]', e.message); return []; }),
+      _fetchSpaceflightNews(20).catch(e => { console.error('[FEED/SNAPI]', e.message); return []; }),
+      _fetchMediastack(newsCountry !== 'us' ? newsCountry : 'us', 25).catch(e => { console.error('[FEED/MEDIASTACK]', e.message); return []; }),
     ]);
 
     // Reddit — accept custom list from frontend, or use defaults
@@ -712,24 +851,28 @@ app.get('/api/feed', async (req, res) => {
     const DEFAULT_REDDIT_SUBS = ['popular','worldnews','technology','science','news','business',
       'artificial','MachineLearning','ChatGPT','interestingasfuck',
       'UpliftingNews','nottheonion','geopolitics','economics','Futurology',
-      'space','movies','gaming','programming','CredibleDefense'];
+      'space','movies','gaming','programming','CredibleDefense',
+      'environment','energy','healthcare','education','law',
+      'datascience','cybersecurity','singularity','collapse',
+      'anime','television','books','music','nba','soccer','formula1',
+      'esports','leagueoflegends','valorant','globaloffensive'];
     const requestedSubs = subs
-      ? subs.split(',').map(s => s.trim()).filter(Boolean).slice(0, 25)
+      ? subs.split(',').map(s => s.trim()).filter(Boolean).slice(0, 40)
       : DEFAULT_REDDIT_SUBS;
 
-    // Fetch Reddit in parallel batches of 4 (balances speed vs rate-limiting)
-    const BATCH_SIZE = 4;
+    // Fetch Reddit in sequential batches of 3 (avoids rate-limiting)
+    const BATCH_SIZE = 3;
     const redditPosts = [];
     for (let i = 0; i < requestedSubs.length; i += BATCH_SIZE) {
       const batch = requestedSubs.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
-        batch.map(sub => _fetchReddit(sub, 'hot', 15))
+        batch.map(sub => _fetchReddit(sub, 'hot', 20))
       );
       for (const r of results) {
         if (r.status === 'fulfilled' && Array.isArray(r.value)) redditPosts.push(...r.value);
         else if (r.status === 'rejected') console.error('[FEED/R]', r.reason?.message);
       }
-      if (i + BATCH_SIZE < requestedSubs.length) await sleep(200);
+      if (i + BATCH_SIZE < requestedSubs.length) await sleep(600);
     }
 
     // Local news: add country-specific Reddit subs
@@ -754,10 +897,11 @@ app.get('/api/feed', async (req, res) => {
       ...guardian, ...wikinews, ...thenewsapi,
       ...gnews.map(i => ({ ...i, local: true })),
       ...regionRss.map(i => ({ ...i, local: true })),
+      ...snapi, ...mediastack,
       ...redditPosts,
       ...localPosts.map(i => ({ ...i, local: true }))
     ];
-    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} TheNewsAPI=${thenewsapi.length} GNews=${gnews.length} RegionRSS=${regionRss.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
+    console.log(`[FEED] HN=${hn.length} RSS=${rss.length} News=${news.length} Guardian=${guardian.length} WikiNews=${wikinews.length} TheNewsAPI=${thenewsapi.length} GNews=${gnews.length} SNAPI=${snapi.length} Mediastack=${mediastack.length} RegionRSS=${regionRss.length} Reddit=${redditPosts.length} Local=${localPosts.length} Total=${items.length}`);
 
     // De-duplicate
     const seen = new Set();
@@ -797,11 +941,11 @@ app.get('/api/feed', async (req, res) => {
         engagement = 30;
       }
       const ageHours = (now - (item.created || 0)) / 3600000;
-      return (engagement + 1) / Math.pow(ageHours + 2, 1.4);
+      return (engagement + 1) / Math.pow(ageHours + 2, 1.2);
     }
     items.sort((a, b) => normalizedScore(b) - normalizedScore(a));
 
-    res.json(items.slice(0, 150));
+    res.json(items.slice(0, 500));
   } catch (e) {
     // NEVER 500 — always return empty array as fallback
     console.error('[FEED] CRITICAL:', e);
@@ -1004,38 +1148,70 @@ app.post('/api/sync/push', async (req, res) => {
 
     const { subreddits, customSubs, interests, settings, bookmarks } = req.body;
 
-    // Upsert preferences
-    const prefsData = JSON.stringify({
-      user_id: user.id,
+    // Upsert preferences — try PATCH first, then INSERT if no row exists
+    const prefsPayload = {
       subreddits: subreddits || [],
       custom_subs: customSubs || [],
       interests: interests || {},
       settings: settings || {},
       updated_at: new Date().toISOString()
-    });
+    };
 
-    const prefsUrl = new URL(SUPA_URL + '/rest/v1/user_prefs?on_conflict=user_id');
-    await new Promise((resolve, reject) => {
+    // Try UPDATE first
+    const patchData = JSON.stringify(prefsPayload);
+    const patchUrl = new URL(SUPA_URL + `/rest/v1/user_prefs?user_id=eq.${user.id}`);
+    const patchResult = await new Promise((resolve, reject) => {
       const opts = {
-        hostname: prefsUrl.hostname,
+        hostname: patchUrl.hostname,
         port: 443,
-        path: prefsUrl.pathname + prefsUrl.search,
-        method: 'POST',
+        path: patchUrl.pathname + patchUrl.search,
+        method: 'PATCH',
         headers: {
           ..._supaHeaders(token),
-          'Prefer': 'resolution=merge-duplicates,return=minimal',
-          'Content-Length': Buffer.byteLength(prefsData)
+          'Prefer': 'return=headers-only',
+          'Content-Length': Buffer.byteLength(patchData)
         }
       };
       const r = https.request(opts, resp => {
         let b = '';
         resp.on('data', c => b += c);
-        resp.on('end', () => resp.statusCode < 400 ? resolve() : reject(new Error(`Prefs ${resp.statusCode}: ${b}`)));
+        resp.on('end', () => {
+          const contentRange = resp.headers['content-range'] || '';
+          resolve({ status: resp.statusCode, body: b, contentRange });
+        });
       });
       r.on('error', reject);
-      r.write(prefsData);
+      r.write(patchData);
       r.end();
     });
+
+    // If PATCH matched 0 rows, do INSERT
+    const patchedZero = patchResult.contentRange === '*/0' || (patchResult.status >= 200 && patchResult.status < 300 && patchResult.contentRange.includes('/0'));
+    if (patchResult.status >= 400 || patchedZero) {
+      const insertData = JSON.stringify({ user_id: user.id, ...prefsPayload });
+      const insertUrl = new URL(SUPA_URL + '/rest/v1/user_prefs');
+      await new Promise((resolve, reject) => {
+        const opts = {
+          hostname: insertUrl.hostname,
+          port: 443,
+          path: insertUrl.pathname,
+          method: 'POST',
+          headers: {
+            ..._supaHeaders(token),
+            'Prefer': 'return=minimal',
+            'Content-Length': Buffer.byteLength(insertData)
+          }
+        };
+        const r = https.request(opts, resp => {
+          let b = '';
+          resp.on('data', c => b += c);
+          resp.on('end', () => resp.statusCode < 400 ? resolve() : reject(new Error(`Prefs INSERT ${resp.statusCode}: ${b}`)));
+        });
+        r.on('error', reject);
+        r.write(insertData);
+        r.end();
+      });
+    }
 
     // Delete existing bookmarks
     await new Promise((resolve, reject) => {
