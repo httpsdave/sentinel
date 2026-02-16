@@ -242,12 +242,22 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
   if (hit) return hit;
 
   const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&t=${t}&raw_json=1`;
-  const json = await httpGet(url, { 'User-Agent': 'Sentinel/2.0 (by /u/sentinel_news_app; news aggregator platform)' });
+  
+  try {
+    const json = await httpGet(url, { 
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    });
 
-  if (!json || !json.data || !json.data.children) {
-    console.warn(`[REDDIT] Unexpected response shape for r/${subreddit}`);
-    return [];
-  }
+    if (!json || !json.data || !json.data.children) {
+      console.warn(`[REDDIT] Unexpected response shape for r/${subreddit}`);
+      return [];
+    }
 
   const posts = json.data.children
     .filter(c => c && c.data && !c.data.over_18 && !c.data.stickied)
@@ -270,8 +280,14 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
       category: guessCategory(c.data.subreddit, c.data.title)
     }));
 
-  setCache(ck, posts);
-  return posts;
+    setCache(ck, posts);
+    return posts;
+  } catch (err) {
+    console.error(`[REDDIT] Error fetching r/${subreddit}:`, err.message);
+    // Cache empty result to avoid hammering Reddit
+    setCache(ck, []);
+    return [];
+  }
 }
 
 async function _fetchHN(type = 'top', limit = 30) {
@@ -749,7 +765,12 @@ app.get('/api/comments', async (req, res) => {
     if (source === 'reddit' && permalink) {
       // permalink should be path like /r/technology/comments/abc/title/
       const url = `https://www.reddit.com${permalink}.json?limit=15&depth=2&sort=top`;
-      const data = await httpGet(url, { 'User-Agent': 'Sentinel/2.0 (by /u/sentinel_news_app; news aggregator platform)' });
+      const data = await httpGet(url, { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive'
+      });
       const comments = [];
       if (Array.isArray(data) && data[1]?.data?.children) {
         for (const c of data[1].data.children.slice(0, 15)) {
@@ -860,8 +881,10 @@ app.get('/api/feed', async (req, res) => {
       ? subs.split(',').map(s => s.trim()).filter(Boolean).slice(0, 40)
       : DEFAULT_REDDIT_SUBS;
 
-    // Fetch Reddit in sequential batches of 3 (avoids rate-limiting)
-    const BATCH_SIZE = 3;
+    // Fetch Reddit in sequential batches of 2 (more conservative for Vercel)
+    // Increase delay to 1 second between batches
+    const BATCH_SIZE = 2;
+    const BATCH_DELAY = 1000; // 1 second delay
     const redditPosts = [];
     for (let i = 0; i < requestedSubs.length; i += BATCH_SIZE) {
       const batch = requestedSubs.slice(i, i + BATCH_SIZE);
@@ -872,7 +895,7 @@ app.get('/api/feed', async (req, res) => {
         if (r.status === 'fulfilled' && Array.isArray(r.value)) redditPosts.push(...r.value);
         else if (r.status === 'rejected') console.error('[FEED/R]', r.reason?.message);
       }
-      if (i + BATCH_SIZE < requestedSubs.length) await sleep(600);
+      if (i + BATCH_SIZE < requestedSubs.length) await sleep(BATCH_DELAY);
     }
 
     // Local news: add country-specific Reddit subs
@@ -887,7 +910,7 @@ app.get('/api/feed', async (req, res) => {
         for (const r of results) {
           if (r.status === 'fulfilled' && Array.isArray(r.value)) localPosts.push(...r.value);
         }
-        if (i + BATCH_SIZE < localSubs.length) await sleep(200);
+        if (i + BATCH_SIZE < localSubs.length) await sleep(800);
       }
     }
 
