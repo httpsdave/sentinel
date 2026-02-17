@@ -67,11 +67,6 @@ function httpGet(url, headers = {}, maxRedirects = 5) {
         if (res.statusCode >= 400) {
           return reject(new Error(`HTTP ${res.statusCode} from ${url.split('?')[0]}`));
         }
-        // Detect HTML consent/login pages served as 200
-        const trimmed = body.trimStart();
-        if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
-          return reject(new Error(`HTML page returned (not JSON, status ${res.statusCode}) from ${url.split('?')[0]}`));
-        }
         try { resolve(JSON.parse(body)); }
         catch { reject(new Error(`JSON parse failed (status ${res.statusCode}) from ${url.split('?')[0]}`)); }
       });
@@ -260,18 +255,17 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
   const hit = cached(ck);
   if (hit) return hit;
 
-  // Use www.reddit.com with browser-like UA + cookie to avoid consent pages
-  const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&t=${t}&raw_json=1`;
+  // Use old.reddit.com — doesn't serve consent/login HTML pages
+  const url = `https://old.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&t=${t}&raw_json=1`;
   
-  // Retry up to 3 times with backoff
+  // Retry up to 2 times with backoff
   let lastErr = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const json = await httpGet(url, { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cookie': '_options={%22pref_quarantine_optin%22:true,%22pref_gated_sr_optin%22:true};reddit_session=; _pcid='
+        // Reddit prefers descriptive bot-like User-Agent strings
+        'User-Agent': 'sentinel-news-aggregator/1.0 (news intelligence platform)',
+        'Accept': 'application/json'
       });
 
       if (!json || !json.data || !json.data.children) {
@@ -304,9 +298,9 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
     return posts;
     } catch (err) {
       lastErr = err;
-      if (attempt < 2) {
-        // Increasing backoff: 2s, 4s
-        await sleep(2000 * (attempt + 1));
+      if (attempt < 1) {
+        // Wait before retrying (1.5s first retry)
+        await sleep(1500);
       }
     }
   }
@@ -790,12 +784,10 @@ app.get('/api/comments', async (req, res) => {
 
     if (source === 'reddit' && permalink) {
       // permalink should be path like /r/technology/comments/abc/title/
-      const url = `https://www.reddit.com${permalink}.json?limit=15&depth=2&sort=top&raw_json=1`;
+      const url = `https://old.reddit.com${permalink}.json?limit=15&depth=2&sort=top`;
       const data = await httpGet(url, { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cookie': '_options={%22pref_quarantine_optin%22:true,%22pref_gated_sr_optin%22:true};reddit_session=; _pcid='
+        'User-Agent': 'sentinel-news-aggregator/1.0 (news intelligence platform)',
+        'Accept': 'application/json'
       });
       const comments = [];
       if (Array.isArray(data) && data[1]?.data?.children) {
@@ -909,7 +901,7 @@ app.get('/api/feed', async (req, res) => {
 
     // Fetch Reddit in sequential batches with delay to avoid rate-limits
     const BATCH_SIZE = 2;
-    const BATCH_DELAY = 2500; // 2.5 second delay between batches
+    const BATCH_DELAY = 1500; // 1.5 second delay between batches
     const redditPosts = [];
     for (let i = 0; i < requestedSubs.length; i += BATCH_SIZE) {
       const batch = requestedSubs.slice(i, i + BATCH_SIZE);
