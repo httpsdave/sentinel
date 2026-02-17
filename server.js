@@ -4,6 +4,7 @@ const RSSParser = require('rss-parser');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const zlib = require('zlib');
 
 const app = express();
 const rssParser = new RSSParser({ timeout: 10000 });
@@ -32,7 +33,7 @@ function httpGet(url, headers = {}, maxRedirects = 5) {
 
     const mod = url.startsWith('https') ? https : http;
     const opts = {
-      headers: { 'Accept': 'application/json', ...headers },
+      headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip, deflate', ...headers },
       timeout: 15000
     };
 
@@ -48,15 +49,33 @@ function httpGet(url, headers = {}, maxRedirects = 5) {
         return httpGet(redir, headers, maxRedirects - 1).then(resolve, reject);
       }
 
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
+      // Handle compressed responses
+      let stream = res;
+      const encoding = (res.headers['content-encoding'] || '').toLowerCase();
+      if (encoding === 'gzip') {
+        stream = res.pipe(zlib.createGunzip());
+      } else if (encoding === 'deflate') {
+        stream = res.pipe(zlib.createInflate());
+      } else if (encoding === 'br') {
+        stream = res.pipe(zlib.createBrotliDecompress());
+      }
+
+      const chunks = [];
+      stream.on('data', chunk => chunks.push(chunk));
+      stream.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf-8');
         if (res.statusCode >= 400) {
           return reject(new Error(`HTTP ${res.statusCode} from ${url.split('?')[0]}`));
+        }
+        // Detect HTML consent/login pages served as 200
+        const trimmed = body.trimStart();
+        if (trimmed.startsWith('<!') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML')) {
+          return reject(new Error(`HTML page returned (not JSON, status ${res.statusCode}) from ${url.split('?')[0]}`));
         }
         try { resolve(JSON.parse(body)); }
         catch { reject(new Error(`JSON parse failed (status ${res.statusCode}) from ${url.split('?')[0]}`)); }
       });
+      stream.on('error', reject);
       res.on('error', reject);
     });
 
@@ -241,23 +260,24 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
   const hit = cached(ck);
   if (hit) return hit;
 
+  // Use www.reddit.com with browser-like UA + cookie to avoid consent pages
   const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}&t=${t}&raw_json=1`;
   
-  try {
-    const json = await httpGet(url, { 
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      'Accept': 'application/json',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    });
+  // Retry up to 3 times with backoff
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const json = await httpGet(url, { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cookie': '_options={%22pref_quarantine_optin%22:true,%22pref_gated_sr_optin%22:true};reddit_session=; _pcid='
+      });
 
-    if (!json || !json.data || !json.data.children) {
-      console.warn(`[REDDIT] Unexpected response shape for r/${subreddit}`);
-      return [];
-    }
+      if (!json || !json.data || !json.data.children) {
+        console.warn(`[REDDIT] Unexpected response shape for r/${subreddit}`);
+        return [];
+      }
 
   const posts = json.data.children
     .filter(c => c && c.data && !c.data.over_18 && !c.data.stickied)
@@ -282,12 +302,18 @@ async function _fetchReddit(subreddit = 'popular', sort = 'hot', limit = 25, t =
 
     setCache(ck, posts);
     return posts;
-  } catch (err) {
-    console.error(`[REDDIT] Error fetching r/${subreddit}:`, err.message);
-    // Cache empty result to avoid hammering Reddit
-    setCache(ck, []);
-    return [];
+    } catch (err) {
+      lastErr = err;
+      if (attempt < 2) {
+        // Increasing backoff: 2s, 4s
+        await sleep(2000 * (attempt + 1));
+      }
+    }
   }
+  console.error(`[REDDIT] Error fetching r/${subreddit}:`, lastErr?.message);
+  // Cache empty result briefly (2min) to avoid hammering Reddit
+  cache.set(`reddit:${subreddit}:${sort}:${limit}:${t}`, { d: [], t: Date.now() - (CACHE_TTL - 120000) });
+  return [];
 }
 
 async function _fetchHN(type = 'top', limit = 30) {
@@ -764,12 +790,12 @@ app.get('/api/comments', async (req, res) => {
 
     if (source === 'reddit' && permalink) {
       // permalink should be path like /r/technology/comments/abc/title/
-      const url = `https://www.reddit.com${permalink}.json?limit=15&depth=2&sort=top`;
+      const url = `https://www.reddit.com${permalink}.json?limit=15&depth=2&sort=top&raw_json=1`;
       const data = await httpGet(url, { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Connection': 'keep-alive'
+        'Cookie': '_options={%22pref_quarantine_optin%22:true,%22pref_gated_sr_optin%22:true};reddit_session=; _pcid='
       });
       const comments = [];
       if (Array.isArray(data) && data[1]?.data?.children) {
@@ -881,10 +907,9 @@ app.get('/api/feed', async (req, res) => {
       ? subs.split(',').map(s => s.trim()).filter(Boolean).slice(0, 40)
       : DEFAULT_REDDIT_SUBS;
 
-    // Fetch Reddit in sequential batches of 2 (more conservative for Vercel)
-    // Increase delay to 1 second between batches
+    // Fetch Reddit in sequential batches with delay to avoid rate-limits
     const BATCH_SIZE = 2;
-    const BATCH_DELAY = 1000; // 1 second delay
+    const BATCH_DELAY = 2500; // 2.5 second delay between batches
     const redditPosts = [];
     for (let i = 0; i < requestedSubs.length; i += BATCH_SIZE) {
       const batch = requestedSubs.slice(i, i + BATCH_SIZE);

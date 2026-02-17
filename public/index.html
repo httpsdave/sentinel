@@ -73,7 +73,7 @@
   <!-- ═══ FILTER BAR ═══ -->
   <div id="filter-bar">
     <div class="filters">
-      <button class="filter-btn active" data-category="all" data-short="ALL">ALL</button>
+      <button class="filter-btn active" data-category="all" data-short="WLD">WORLD</button>
       <button class="filter-btn" data-category="technology" data-short="TECH">TECH</button>
       <button class="filter-btn" data-category="politics" data-short="POL">POLITICS</button>
       <button class="filter-btn" data-category="science" data-short="SCI">SCIENCE</button>
@@ -81,26 +81,49 @@
       <button class="filter-btn" data-category="entertainment" data-short="ENT">ENTERTAIN</button>
       <button class="filter-btn" data-category="sports" data-short="SPT">SPORTS</button>
       <button class="filter-btn" data-category="esports" data-short="ESP">ESPORTS</button>
-      <button class="filter-btn" data-category="world" data-short="WLD">WORLD</button>
       <button class="filter-btn" data-category="community" data-short="COM">COMMUNITY</button>
       <button class="filter-btn filter-local hidden" data-category="local" data-short="LOC" id="filter-local">📍 LOCAL</button>
     </div>
-    <div class="sort-control">
-      <select id="sort-mode">
-        <option value="ranked">⚡ Ranked</option>
-        <option value="newest">🕐 Newest</option>
-        <option value="oldest">🕐 Oldest</option>
-      </select>
-    </div>
-    <div class="source-filters">
-      <label class="source-toggle"><input type="checkbox" data-source="reddit" checked> Reddit</label>
-      <label class="source-toggle"><input type="checkbox" data-source="hackernews" checked> HN</label>
-      <label class="source-toggle"><input type="checkbox" data-source="rss" checked> RSS</label>
-      <label class="source-toggle"><input type="checkbox" data-source="newsapi" checked> NewsAPI</label>
-      <label class="source-toggle"><input type="checkbox" data-source="guardian" checked> Guardian</label>
-      <label class="source-toggle"><input type="checkbox" data-source="wikinews" checked> WikiNews</label>
-      <label class="source-toggle"><input type="checkbox" data-source="thenewsapi" checked> TheNewsAPI</label>
-      <label class="source-toggle"><input type="checkbox" data-source="gnews" checked> GNews</label>
+    <div class="filter-actions">
+      <div class="sort-dropdown" id="sort-dropdown">
+        <button class="sort-dropdown-btn" id="sort-dropdown-btn" title="Sort order">
+          <svg class="sort-icon" id="sort-icon-active" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l2 4h4l-3.2 2.8L12 13 8 10.2 4 13l1.2-5.2L2 5h4z"/></svg>
+          <span id="sort-label">RANKED</span>
+          <svg class="sort-chevron" viewBox="0 0 10 6" width="8" height="5" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="sort-dropdown-menu hidden" id="sort-dropdown-menu">
+          <button class="sort-option active" data-sort="ranked">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l2 4h4l-3.2 2.8L12 13 8 10.2 4 13l1.2-5.2L2 5h4z"/></svg>
+            <span>RANKED</span>
+          </button>
+          <button class="sort-option" data-sort="newest">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v10M8 2l3 3M8 2L5 5"/><line x1="3" y1="14" x2="13" y2="14"/></svg>
+            <span>NEWEST</span>
+          </button>
+          <button class="sort-option" data-sort="oldest">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14V4M8 14l3-3M8 14L5 11"/><line x1="3" y1="2" x2="13" y2="2"/></svg>
+            <span>OLDEST</span>
+          </button>
+        </div>
+      </div>
+      <div class="source-dropdown" id="source-dropdown">
+        <button class="source-dropdown-btn" id="source-dropdown-btn" title="Filter news sources">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 2v2M8 12v2M14 8h-2M4 8H2M12.2 3.8l-1.4 1.4M5.2 10.8l-1.4 1.4M12.2 12.2l-1.4-1.4M5.2 5.2L3.8 3.8"/></svg>
+          <span>SOURCES</span>
+          <span class="source-count" id="source-count">8</span>
+        </button>
+        <div class="source-dropdown-menu hidden" id="source-dropdown-menu">
+          <div class="source-dropdown-header">◈ NEWS SOURCES</div>
+          <label class="source-option"><input type="checkbox" data-source="reddit" checked><span class="source-dot"></span>Reddit</label>
+          <label class="source-option"><input type="checkbox" data-source="hackernews" checked><span class="source-dot"></span>Hacker News</label>
+          <label class="source-option"><input type="checkbox" data-source="rss" checked><span class="source-dot"></span>RSS Feeds</label>
+          <label class="source-option"><input type="checkbox" data-source="newsapi" checked><span class="source-dot"></span>NewsAPI</label>
+          <label class="source-option"><input type="checkbox" data-source="guardian" checked><span class="source-dot"></span>Guardian</label>
+          <label class="source-option"><input type="checkbox" data-source="wikinews" checked><span class="source-dot"></span>WikiNews</label>
+          <label class="source-option"><input type="checkbox" data-source="thenewsapi" checked><span class="source-dot"></span>TheNewsAPI</label>
+          <label class="source-option"><input type="checkbox" data-source="gnews" checked><span class="source-dot"></span>GNews</label>
+        </div>
+      </div>
     </div>
   </div>
 

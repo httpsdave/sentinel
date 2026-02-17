@@ -51,18 +51,70 @@ const App = (() => {
       });
     });
 
-    // ── Source toggles ──
-    document.querySelectorAll('.source-toggle input').forEach(cb => {
+    // ── Source toggles (dropdown) ──
+    document.querySelectorAll('.source-option input').forEach(cb => {
       cb.addEventListener('change', () => {
         cb.checked ? activeSources.add(cb.dataset.source) : activeSources.delete(cb.dataset.source);
+        const cnt = document.getElementById('source-count');
+        if (cnt) cnt.textContent = activeSources.size;
         applyFilters();
       });
     });
 
-    // ── Sort mode ──
-    document.getElementById('sort-mode').addEventListener('change', (e) => {
-      sortMode = e.target.value;
-      applyFilters();
+    // ── Source dropdown toggle ──
+    const srcDropBtn = document.getElementById('source-dropdown-btn');
+    const srcDropMenu = document.getElementById('source-dropdown-menu');
+    if (srcDropBtn && srcDropMenu) {
+      srcDropBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        srcDropMenu.classList.toggle('hidden');
+        srcDropBtn.classList.toggle('open');
+        // Close sort dropdown if open
+        document.getElementById('sort-dropdown-menu')?.classList.add('hidden');
+        document.getElementById('sort-dropdown-btn')?.classList.remove('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.source-dropdown')) {
+          srcDropMenu.classList.add('hidden');
+          srcDropBtn.classList.remove('open');
+        }
+      });
+    }
+
+    // ── Sort mode (dropdown) ──
+    const sortDropBtn = document.getElementById('sort-dropdown-btn');
+    const sortDropMenu = document.getElementById('sort-dropdown-menu');
+    if (sortDropBtn && sortDropMenu) {
+      sortDropBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sortDropMenu.classList.toggle('hidden');
+        sortDropBtn.classList.toggle('open');
+        // Close source dropdown if open
+        document.getElementById('source-dropdown-menu')?.classList.add('hidden');
+        document.getElementById('source-dropdown-btn')?.classList.remove('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.sort-dropdown')) {
+          sortDropMenu.classList.add('hidden');
+          sortDropBtn.classList.remove('open');
+        }
+      });
+    }
+    document.querySelectorAll('.sort-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.sort-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        sortMode = opt.dataset.sort;
+        // Update trigger button label & icon
+        const label = document.getElementById('sort-label');
+        const icon = document.getElementById('sort-icon-active');
+        if (label) label.textContent = opt.querySelector('span').textContent;
+        if (icon) icon.innerHTML = opt.querySelector('svg').innerHTML;
+        // Close menu
+        sortDropMenu?.classList.add('hidden');
+        sortDropBtn?.classList.remove('open');
+        applyFilters();
+      });
     });
 
     // Show/hide LOCAL button based on region setting
@@ -280,7 +332,7 @@ const App = (() => {
       btn.textContent = '📍 ' + label;
     } else {
       btn.classList.add('hidden');
-      // If local was active, switch back to all
+      // If local was active, switch back to world
       if (currentCategory === 'local') {
         currentCategory = 'all';
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -321,7 +373,12 @@ const App = (() => {
     Radar.setItems(filteredItems);
     WorldMap.setItems(filteredItems);
     Timeline.setItems(filteredItems);
-    document.getElementById('radar-count').textContent = filteredItems.length + ' signals detected';
+
+    // Update count displays — always use filteredItems.length for accuracy
+    const catLabel = currentCategory === 'all' ? 'WORLD' : currentCategory.toUpperCase();
+    document.getElementById('radar-count').textContent = filteredItems.length + ' signals detected · ' + catLabel;
+    const mapCount = document.getElementById('map-count');
+    if (mapCount) mapCount.textContent = filteredItems.length + ' signals · ' + catLabel;
   }
 
   /* ═══ DETAIL PANEL ═══════════════════════════════ */
